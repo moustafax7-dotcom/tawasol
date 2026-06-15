@@ -1,0 +1,152 @@
+ .app-frame {
+  width: 100%;
+  max-width: 400px;
+  min-height: 550px;
+  background-color: #FFFFFF;
+  margin: 40px auto;
+  border-radius: 24px;
+  padding: 30px 20px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Cairo', 'Almarai', sans-serif;
+  box-sizing: border-box;
+}
+
+ .app-main-title {
+  font-size: 26px;
+  color: #000000;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.app-sub-title {
+  font-size: 14px;
+  color: #7E7E7E;
+  margin-bottom: 35px;
+  text-align: center;
+}
+
+ .orange-button {
+  background-color: #E98A53; 
+  color: #FFFFFF;
+  border: none;
+  border-radius: 14px;
+  padding: 14px 20px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.2s, background-color 0.2s;
+}
+
+.orange-button:active {
+  transform: scale(0.98);
+  background-color: #d67943;
+}
+
+.menu-btn {
+  width: 90%;
+  margin-bottom: 16px;
+}
+
+.action-btn {
+  width: 85%;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.secondary-style {
+  background-color: #F3A476;  
+}
+
+.button-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+ .stars-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 20px;
+}
+
+.stars-row img {
+  width: 20px;
+  height: 20px;
+}
+
+.stars-text {
+  font-size: 13px;
+  color: #7E7E7E;
+  margin-right: 8px;
+}
+
+ .step-title {
+  font-size: 24px;
+  color: #000000;
+  margin-bottom: 6px;
+}
+
+.step-instruction {
+  font-size: 14px;
+  color: #7E7E7E;
+  margin-bottom: 25px;
+  text-align: center;
+}
+
+ .image-placeholder-box {
+  width: 85%;
+  height: 180px;
+  background-color: #F9F9F9;
+  border-radius: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  border: 1px linear #EEE;
+}
+
+.image-note {
+  font-size: 14px;
+  color: #A0A0A0;
+}
+
+ .badge-counter {
+  background-color: #EAEAEA;
+  color: #555555;
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 25px;
+}
+
+ .congrats-title {
+  font-size: 28px;
+  color: #E98A53;
+  font-weight: bold;
+  margin-top: 20px;
+  margin-bottom: 10px;
+}
+
+.congrats-sub {
+  font-size: 15px;
+  color: #555555;
+  margin-bottom: 40px;
+  text-align: center;
+  padding: 0 10px;
+}
+
+.stars-earned {
+  font-size: 13px;
+  color: #7E7E7E;
+  margin-top: 20px;
+}
