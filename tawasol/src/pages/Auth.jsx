@@ -1,5 +1,5 @@
 import { useState } from "react";
-
+import { supabase } from '../supabaseClient';
 // ─────────────────────────────────────────────────────────────
 //  DESIGN TOKENS
 // ─────────────────────────────────────────────────────────────
@@ -189,19 +189,27 @@ function LoginForm({ onSwitch }) {
     else if (form.password.length < 6)          e.password = "كلمة المرور أقل من 6 أحرف";
     return e;
   }
+async function submit(e) {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    
+    setLoading(true);
+    // الربط الفعلي مع Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: form.email,
+      password: form.password,
+    });
 
-  async function submit(e) {
-  e.preventDefault();
-  const errs = validate();
-  if (Object.keys(errs).length) { setErrors(errs); return; }
-  setErrors({});
-  setLoading(true);
+    if (error) {
+      setErrors({ email: error.message });
+      setLoading(false);
+    } else {
+      setDone(true);
+      setTimeout(() => { window.location.href = "/parent"; }, 1500);
+    }
+  }
 
-  await new Promise(r => setTimeout(r, 1500));
-
-  setLoading(false);
-  window.location.href = "/parent";
-}
 
   if (done) return <Success isLogin />;
 
@@ -263,25 +271,35 @@ function RegisterForm({ onSwitch }) {
     return e;
   }
 
-  async function submit(e) {
-  e.preventDefault();
-  const errs = validate();
-  if (Object.keys(errs).length) { setErrors(errs); return; }
-  setErrors({});
-  setLoading(true);
+async function submit(e) {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    
+    setLoading(true);
+    // الربط الفعلي مع Supabase
+    const { data, error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        data: {
+          full_name: form.name,
+          role: role // تخزين الدور المختار (Parent/Specialist)
+        }
+      }
+    });
 
-  await new Promise(r => setTimeout(r, 1500));
-
-  setLoading(false);
-
-  const nextPage = {
-    parent: "/parent",
-    specialist: "/tawasl",
-    child: "/kids",
-  };
-
-  window.location.href = nextPage[role] || "/parent";
-}
+    if (error) {
+      alert("خطأ: " + error.message);
+      setLoading(false);
+    } else {
+      setDone(true);
+      setTimeout(() => {
+        const paths = { parent: "/parent", specialist: "/tawasl" };
+        window.location.href = paths[role] || "/parent";
+      }, 1500);
+    }
+  }
 
   if (done) return <Success />;
 

@@ -1,5 +1,5 @@
-import { useState } from "react";
-
+import { useState, useEffect } from "react";
+import { supabase } from "../supabaseClient.js";
 // ─── Tokens ───────────────────────────────────────────────────────────────────
 const T = {
   primary:   "#E9824C", primaryBg: "#FEF0E8", primaryLight:"#F5A47C",
@@ -342,7 +342,7 @@ function Header() {
       <div>
         <div style={{ fontSize: 11, color: T.textMuted, marginBottom: 2 }}>{today}</div>
         <h1 style={{ fontSize: 20, fontWeight: 900, color: T.text, margin: 0 }}>
-          متابعة {CHILD.name} 👨‍👩‍👦
+          متابعة { CHILD.name} 👨‍👩‍👦
         </h1>
       </div>
       <div style={{
@@ -357,6 +357,33 @@ function Header() {
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function ParentDashboard() {
+  const [userName, setUserName] = useState("...");
+
+useEffect(() => {
+    const fetchUserName = async () => {
+      // 1. جلب بيانات المستخدم الحالي من الـ Auth
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (user) {
+        // 2. جلب الاسم من جدول الـ profiles الجديد
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('full_name') // تأكد أن اسم العمود في جدولك هو full_name
+          .eq('id', user.id)
+          .single();
+        
+        if (data) {
+          setUserName(data.full_name);
+       } else {
+  // استخدام || "" لضمان عدم تمرير undefined
+  setUserName(user.email || ""); 
+}
+      }
+    };
+    
+    fetchUserName();
+  }, []);
+
   return (
     <>
       <style>{`
@@ -383,7 +410,7 @@ export default function ParentDashboard() {
           }}>
             <div style={{ fontSize: 44 }}>{CHILD.avatar}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>{CHILD.name}</div>
+              <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>{userName}</div>
               <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>{CHILD.age} سنوات</div>
               <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
                 {[

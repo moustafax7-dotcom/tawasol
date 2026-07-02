@@ -246,7 +246,7 @@ function Navbar() {
       left:           0,
       zIndex:         100,
       height:         70,
-      padding:        "0 5%",
+      padding:        "0 2%",
       display:        "flex",
       alignItems:     "center",
       justifyContent: "space-between",
@@ -303,7 +303,7 @@ function HeroSection() {
       background: `linear-gradient(160deg, #E8F3F8 0%, ${C.bg} 55%, #EDE8F3 100%)`,
       display:    "flex",
       alignItems: "center",
-      padding:    "110px 5% 70px",
+      padding:    "110px 2% 70px",
       position:   "relative",
       overflow:   "hidden",
     }}>
@@ -325,8 +325,7 @@ function HeroSection() {
       }} />
 
       <div style={{
-        maxWidth:            1200,
-        margin:              "0 auto",
+      
         width:               "100%",
         display:             "grid",
         gridTemplateColumns: "1fr 1fr",
@@ -1074,7 +1073,7 @@ function Footer() {
       color:      "rgba(255,255,255,0.7)",
       padding:    "54px 5% 32px",
     }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
         <div style={{
           display:             "grid",
           gridTemplateColumns: "2fr 1fr 1fr 1fr",
@@ -1163,6 +1162,8 @@ export default function Landing() {
       background: C.bg,
       color:      C.text,
       overflowX:  "hidden",
+      width: "100%",      
+      minHeight: "100vh",   
     }}>
       <GlobalStyles />
       <Navbar />
