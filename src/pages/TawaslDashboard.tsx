@@ -1,17 +1,5 @@
 import { useState } from "react";
-
-// ─── Design Tokens ─────────────────────────────────────────────────────────
-const T = {
-  primary:"#E9824C", primaryLight:"#F5A47C", primaryBg:"#FEF0E8",
-  secondary:"#6B8FA8", secondaryDark:"#4A7189", secondaryBg:"#EBF2F7",
-  sidebar:"#2E4A5A", sidebarActive:"#3D6478",
-  bg:"#F0EDE8", surface:"#FFFFFF", surfaceAlt:"#F8F6F3",
-  text:"#2C2C3A", textMuted:"#8A8A9A", textLight:"#B0B0BC", border:"#E4E0D8",
-  success:"#5BB88A", successBg:"#EAF7F1",
-  warning:"#E9C84C", warningBg:"#FEF9E8",
-  danger:"#E05C5C", dangerBg:"#FDEDED",
-  shadow:"rgba(44,44,58,0.07)", shadowMd:"rgba(44,44,58,0.12)",
-};
+import { specialistTokens as T } from "./theme";
 
 function progressColor(p) {
   return p >= 70 ? T.success : p >= 45 ? T.warning : T.danger;
@@ -33,14 +21,14 @@ const statusColors = {
 // ─── Mock Data ──────────────────────────────────────────────────────────────
 const specialists = [
   { id:"s1", name:"د. سارة محمود",  title:"أخصائية ABA",     rating:4.9, experienceYears:8,  status:"متاح",    todaySessions:5, totalSessions:340, nextSession:"10:00 ص" },
-  { id:"s2", name:"د. نورة أحمد",   title:"أخصائية PCES",    rating:4.7, experienceYears:5,  status:"في جلسة", todaySessions:3, totalSessions:195, nextSession:"11:30 ص" },
+  { id:"s2", name:"د. نورة أحمد",   title:"أخصائية PECS",    rating:4.7, experienceYears:5,  status:"في جلسة", todaySessions:3, totalSessions:195, nextSession:"11:30 ص" },
   { id:"s3", name:"د. منى حسن",     title:"أخصائية Speech",  rating:4.8, experienceYears:6,  status:"متاح",    todaySessions:2, totalSessions:210, nextSession:"01:00 م" },
   { id:"s4", name:"د. خالد يوسف",   title:"معالج سلوكي",     rating:4.9, experienceYears:10, status:"غير متاح",todaySessions:0, totalSessions:420, nextSession:null },
 ];
 
 const cases = [
   { id:"c1", childName:"أحمد محمد",  ageYears:7, specialistName:"د. سارة محمود", therapyType:"ABA",           stage:"المرحلة 3", progressPercent:78, mood:"سعيد",   status:"مستقر",         lastSession:"اليوم" },
-  { id:"c2", childName:"نور خالد",   ageYears:5, specialistName:"د. سارة محمود", therapyType:"PCES",          stage:"المرحلة 1", progressPercent:55, mood:"محايد",  status:"مستقر",         lastSession:"أمس" },
+  { id:"c2", childName:"نور خالد",   ageYears:5, specialistName:"د. سارة محمود", therapyType:"PECS",          stage:"المرحلة 1", progressPercent:55, mood:"محايد",  status:"مستقر",         lastSession:"أمس" },
   { id:"c3", childName:"يوسف علي",   ageYears:8, specialistName:"د. نورة أحمد",  therapyType:"ABA",           stage:"المرحلة 2", progressPercent:66, mood:"سعيد",   status:"ممتاز",         lastSession:"اليوم" },
   { id:"c4", childName:"ليلى سامي",  ageYears:6, specialistName:"د. منى حسن",    therapyType:"ABA",           stage:"المرحلة 1", progressPercent:30, mood:"قلق",    status:"يحتاج متابعة",  lastSession:"منذ 4 أيام" },
   { id:"c5", childName:"عمر حسام",   ageYears:9, specialistName:"د. سارة محمود", therapyType:"متابعة العلاج", stage:"المرحلة 3", progressPercent:78, mood:"سعيد",   status:"مستقر",         lastSession:"اليوم" },
@@ -49,7 +37,7 @@ const cases = [
 
 const sessions = [
   { id:"ss1", childName:"أحمد محمد", specialistName:"د. سارة محمود", time:"09:00 ص", durationMin:60, status:"منتهية", type:"ABA" },
-  { id:"ss2", childName:"نور خالد",  specialistName:"د. سارة محمود", time:"10:00 ص", durationMin:45, status:"جارية",  type:"PCES" },
+  { id:"ss2", childName:"نور خالد",  specialistName:"د. سارة محمود", time:"10:00 ص", durationMin:45, status:"جارية",  type:"PECS" },
   { id:"ss3", childName:"يوسف علي",  specialistName:"د. نورة أحمد",  time:"11:30 ص", durationMin:60, status:"قادمة",  type:"ABA" },
   { id:"ss4", childName:"ليلى سامي", specialistName:"د. منى حسن",    time:"01:00 م", durationMin:45, status:"قادمة",  type:"متابعة العلاج" },
   { id:"ss5", childName:"عمر حسام",  specialistName:"د. سارة محمود", time:"02:30 م", durationMin:60, status:"قادمة",  type:"ABA" },
@@ -518,12 +506,6 @@ function Layout({ children, active, onNav }) {
               <div style={{ fontSize:10, color:"rgba(255,255,255,0.45)", marginTop:2 }}>بوابة الأخصائيين</div>
             </div>
           </div>
-          {/* Close btn - mobile only */}
-          <button onClick={() => setMenuOpen(false)} style={{
-            display:"none", background:"none", border:"none", color:"rgba(255,255,255,0.6)",
-            fontSize:22, cursor:"pointer", padding:4, lineHeight:1,
-            className:"close-btn",
-          }} className="mobile-close-btn">✕</button>
         </div>
       </div>
 
@@ -646,7 +628,7 @@ function Layout({ children, active, onNav }) {
 }
 
 // ─── App ─────────────────────────────────────────────────────────────────────
-export default function App() {
+export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
   const pages = {
     overview:    <OverviewPage    onNavigate={setSection} />,
@@ -657,7 +639,7 @@ export default function App() {
   };
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D0CCC4;border-radius:99px}button:active{opacity:0.8}`}</style>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D0CCC4;border-radius:99px}button:active{opacity:0.8}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}`}</style>
       <Layout active={section} onNav={setSection}>{pages[section]}</Layout>
     </>
   );

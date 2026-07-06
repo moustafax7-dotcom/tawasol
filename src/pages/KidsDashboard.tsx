@@ -1,16 +1,6 @@
 import { useState } from "react";
-
-// ─── Design Tokens ────────────────────────────────────────────────────────────
-const K = {
-  primary:   "#E9824C",
-  secondary: "#8E80BC",
-  bg:        "#FFF8F0",
-  surface:   "#FFFFFF",
-  text:      "#2C2240",
-  textMuted: "#9B8EA8",
-  border:    "#F0E8FF",
-  shadow:    "rgba(142,128,188,0.12)",
-};
+import { kidsTokens as K } from "./theme";
+import MemoryGame from "./MemoryGame";
 
 const MOODS = [
   { id:"happy", emoji:"😄", label:"سعيد",  color:"#FFD93D", bg:"#FFFBEA", border:"#FFD93D" },
@@ -315,7 +305,7 @@ function GamesSection({ onPlayGame }: { onPlayGame: (id: string) => void }) {
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-function Header() {
+function Header({ points }: { points: number }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "صباح الخير" : hour < 17 ? "مرحباً" : "مساء الخير";
   return (
@@ -348,7 +338,7 @@ function Header() {
         <div style={{ display:"flex", gap:10 }}>
           {[
             { icon:"🎮", label:"ألعاب", value:"4" },
-            { icon:"⭐", label:"نقاطي", value:"120" },
+            { icon:"⭐", label:"نقاطي", value:String(points) },
             { icon:"🏆", label:"إنجازات", value:"7" },
           ].map(({icon,label,value}) => (
             <div key={label} style={{
@@ -445,17 +435,27 @@ function GameModal({ gameId, onClose }: { gameId: string; onClose: () => void })
 
 // ─── App ──────────────────────────────────────────────────────────────────────
 export default function KidsDashboard() {
-  const [tab, setTab]         = useState("home");
-  const [gameModal, setGame]  = useState<string|null>(null);
+  const [tab, setTab]           = useState("home");
+  const [gameModal, setGame]    = useState<string|null>(null);
+  const [activeGame, setActive] = useState<string|null>(null);
+  const [points, setPoints]     = useState(120);
 
   const handlePlayGame = (id: string) => {
-    if (id === "memory") {
-      // link to memory game
-      setGame(id);
-    } else {
-      setGame(id);
-    }
+    // Memory is live; the rest still show the "coming soon" card.
+    if (id === "memory") setActive("memory");
+    else setGame(id);
   };
+
+  const handleMemoryComplete = ({ moves }: { moves: number; time: number }) => {
+    const reward = moves <= 8 ? 20 : 10; // fewer moves earns more coins
+    setPoints(p => p + reward);
+    // TODO(Supabase): persist the reward to the child's rewards row.
+    // await supabase.from("rewards").update({ coins: coins + reward }).eq("child_id", childId);
+  };
+
+  if (activeGame === "memory") {
+    return <MemoryGame onExit={() => setActive(null)} onComplete={handleMemoryComplete} />;
+  }
 
   const renderContent = () => {
     if (tab === "games")    return <GamesSection onPlayGame={handlePlayGame} />;
@@ -477,6 +477,9 @@ export default function KidsDashboard() {
         @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
         *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
         button:active { transform: scale(0.96) !important; }
+        @media (prefers-reduced-motion: reduce) {
+          *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
       `}</style>
 
       <div style={{
@@ -484,7 +487,7 @@ export default function KidsDashboard() {
         fontFamily:"'Tajawal',sans-serif", direction:"rtl",
         paddingBottom:90,
       }}>
-        <Header />
+        <Header points={points} />
 
         <div style={{ padding:"0 16px", maxWidth:600, margin:"0 auto" }}>
           {renderContent()}

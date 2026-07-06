@@ -394,7 +394,7 @@ function HeroSection() {
           {/* CTA Buttons */}
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
             <button className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>
-              ابدأ رحلتك مجاناً ←
+              ابدأ رحلتك ←
             </button>
             <button className="btn-outline">
               🎥 شاهد كيف تعمل
@@ -730,7 +730,7 @@ function FeaturesSection() {
 // ─────────────────────────────────────────────────────────────
 function HowItWorksSection() {
   const steps = [
-    { n: "1", icon: "📝", title: "سجّل مجاناً",      desc: "أنشئ حسابك كولي أمر أو أخصائي في دقيقتين بدون بطاقة بنكية." },
+    { n: "1", icon: "📝", title: "سجّل الآن",        desc: "أنشئ حسابك كولي أمر أو أخصائي في دقيقتين." },
     { n: "2", icon: "👤", title: "أضف ملف طفلك",    desc: "أدخل معلومات بسيطة عن طفلك لتخصيص تجربته الكاملة تلقائياً." },
     { n: "3", icon: "🚀", title: "ابدأ الرحلة",      desc: "الطفل يلعب ويتعلم، وأنت تتابع تقدمه في الوقت الفعلي." },
   ];
@@ -1031,7 +1031,7 @@ function CTASection() {
             onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
             onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
           >
-            ابدأ مجاناً ←
+            ابدأ الآن ←
           </button>
           <button style={{
             background:  "rgba(255,255,255,0.15)",

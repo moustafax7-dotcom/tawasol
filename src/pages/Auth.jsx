@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from '../supabaseClient';
 // ─────────────────────────────────────────────────────────────
 //  DESIGN TOKENS
@@ -174,6 +175,7 @@ function Success({ isLogin }) {
 //  LOGIN FORM
 // ─────────────────────────────────────────────────────────────
 function LoginForm({ onSwitch }) {
+  const navigate = useNavigate();
   const [form, setForm]     = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -206,7 +208,7 @@ async function submit(e) {
       setLoading(false);
     } else {
       setDone(true);
-      setTimeout(() => { window.location.href = "/parent"; }, 1500);
+      setTimeout(() => navigate("/parent"), 1500);
     }
   }
 
@@ -244,6 +246,7 @@ async function submit(e) {
 //  REGISTER FORM
 // ─────────────────────────────────────────────────────────────
 function RegisterForm({ onSwitch }) {
+  const navigate = useNavigate();
   const [role, setRole]     = useState("parent");
   const [form, setForm]     = useState({
     name: "", email: "", password: "", confirm: "",
@@ -296,7 +299,7 @@ async function submit(e) {
       setDone(true);
       setTimeout(() => {
         const paths = { parent: "/parent", specialist: "/tawasl" };
-        window.location.href = paths[role] || "/parent";
+        navigate(paths[role] || "/parent");
       }, 1500);
     }
   }
