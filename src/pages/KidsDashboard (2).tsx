@@ -2,6 +2,10 @@ import { useState } from "react";
 import { kidsTokens as K } from "./theme";
 import MemoryGame from "./MemoryGame";
 import AnimalSoundsGame from "./AnimalSoundsGame";
+import SequencingGame from "./SequencingGame";
+import ColorMatchGame from "./ColorMatchGame";
+import TracingGame from "./TracingGame";
+import MusicGame from "./MusicGame";
 
 const MOODS = [
   { id:"happy", emoji:"😄", label:"سعيد",  color:"#FFD93D", bg:"#FFFBEA", border:"#FFD93D" },
@@ -14,7 +18,8 @@ const GAMES = [
   { id:"memory",  emoji:"🧠", label:"لعبة الذاكرة",  color:"#8E80BC", bg:"#F0EEF8", stars:3 },
   { id:"animals", emoji:"🐾", label:"أصوات الحيوانات", color:"#E9824C", bg:"#FEF0E8", stars:4 },
   { id:"puzzle",  emoji:"🧩", label:"البازل",        color:"#E9824C", bg:"#FEF0E8", stars:2 },
-  { id:"draw",    emoji:"🎨", label:"الرسم",         color:"#6BCB77", bg:"#EDFFF0", stars:5 },
+  { id:"colors",  emoji:"🎨", label:"خمّن اللون",     color:"#5BB88A", bg:"#EAF7F1", stars:3 },
+  { id:"draw",    emoji:"✏️", label:"تتبّع الخطوط",   color:"#6BCB77", bg:"#EDFFF0", stars:5 },
   { id:"music",   emoji:"🎵", label:"الموسيقى",      color:"#74B9FF", bg:"#EEF6FF", stars:1 },
 ];
 
@@ -443,9 +448,8 @@ export default function KidsDashboard() {
   const [points, setPoints]     = useState(120);
 
   const handlePlayGame = (id: string) => {
-    // Memory and Animals are live; the rest still show the "coming soon" card.
-    if (id === "memory" || id === "animals") setActive(id);
-    else setGame(id);
+    // All six games are now live.
+    setActive(id);
   };
 
   const handleMemoryComplete = ({ moves }: { moves: number; time: number }) => {
@@ -462,11 +466,51 @@ export default function KidsDashboard() {
     // await supabase.from("rewards").update({ coins: coins + reward }).eq("child_id", childId);
   };
 
+  const handleSequencingComplete = ({ score }: { score: number; level: number }) => {
+    const reward = Math.round(score / 3); // 105 points max -> up to 35 coins
+    setPoints(p => p + reward);
+    // TODO(Supabase): persist the reward to the child's rewards row.
+    // await supabase.from("rewards").update({ coins: coins + reward }).eq("child_id", childId);
+  };
+
+  const handleColorMatchComplete = ({ score }: { score: number; level: number }) => {
+    const reward = Math.round(score / 5); // 100 points max -> up to 20 coins
+    setPoints(p => p + reward);
+    // TODO(Supabase): persist the reward to the child's rewards row.
+    // await supabase.from("rewards").update({ coins: coins + reward }).eq("child_id", childId);
+  };
+
+  const handleTracingComplete = ({ score }: { score: number; level: number }) => {
+    const reward = Math.round(score / 2); // 60 points max -> up to 30 coins
+    setPoints(p => p + reward);
+    // TODO(Supabase): persist the reward to the child's rewards row.
+    // await supabase.from("rewards").update({ coins: coins + reward }).eq("child_id", childId);
+  };
+
+  const handleMusicComplete = ({ score }: { score: number; level: number }) => {
+    const reward = Math.round(score / 2); // 60 points max -> up to 30 coins
+    setPoints(p => p + reward);
+    // TODO(Supabase): persist the reward to the child's rewards row.
+    // await supabase.from("rewards").update({ coins: coins + reward }).eq("child_id", childId);
+  };
+
   if (activeGame === "memory") {
     return <MemoryGame onExit={() => setActive(null)} onComplete={handleMemoryComplete} />;
   }
   if (activeGame === "animals") {
     return <AnimalSoundsGame onExit={() => setActive(null)} onComplete={handleAnimalSoundsComplete} />;
+  }
+  if (activeGame === "puzzle") {
+    return <SequencingGame onExit={() => setActive(null)} onComplete={handleSequencingComplete} />;
+  }
+  if (activeGame === "colors") {
+    return <ColorMatchGame onExit={() => setActive(null)} onComplete={handleColorMatchComplete} />;
+  }
+  if (activeGame === "draw") {
+    return <TracingGame onExit={() => setActive(null)} onComplete={handleTracingComplete} />;
+  }
+  if (activeGame === "music") {
+    return <MusicGame onExit={() => setActive(null)} onComplete={handleMusicComplete} />;
   }
 
   const renderContent = () => {
