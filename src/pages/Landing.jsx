@@ -277,14 +277,12 @@ function Navbar() {
           width:        42,
           height:       42,
           borderRadius: 13,
-          background:   `linear-gradient(135deg, ${C.primary}, ${C.primaryLight})`,
           display:      "flex",
           alignItems:   "center",
           justifyContent: "center",
-          fontSize:     20,
-          boxShadow:    `0 4px 14px ${C.primary}44`,
+          overflow:     "hidden",
         }}>
-          🤝
+          <img src="/logo.jpg" alt="شعار تواصل" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
         </div>
         <span style={{
           fontFamily: "Cairo, sans-serif",
@@ -319,8 +317,15 @@ function Navbar() {
 // ─────────────────────────────────────────────────────────────
 //  HERO SECTION
 // ─────────────────────────────────────────────────────────────
+// رابط الفيديو التعريفي — بدّل القيمة دي برابط اليوتيوب/الفيديو الحقيقي لما يجهز
+const INTRO_VIDEO_URL = "";
+
 function HeroSection() {
+  const navigate = useNavigate();
+  const [showVideo, setShowVideo] = useState(false);
+
   return (
+    <>
     <section id="hero" style={{
       minHeight:  "100vh",
       background: `linear-gradient(160deg, #E8F3F8 0%, ${C.bg} 55%, #EDE8F3 100%)`,
@@ -416,10 +421,14 @@ function HeroSection() {
 
           {/* CTA Buttons */}
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap" }}>
-            <button className="btn-primary" style={{ fontSize: 16, padding: "15px 36px" }}>
+            <button
+              className="btn-primary"
+              style={{ fontSize: 16, padding: "15px 36px" }}
+              onClick={() => navigate("/auth")}
+            >
               ابدأ رحلتك ←
             </button>
-            <button className="btn-outline">
+            <button className="btn-outline" onClick={() => setShowVideo(true)}>
               🎥 شاهد كيف تعمل
             </button>
           </div>
@@ -459,6 +468,59 @@ function HeroSection() {
         </div>
       </div>
     </section>
+
+    {showVideo && (
+      <div
+        onClick={() => setShowVideo(false)}
+        style={{
+          position: "fixed", inset: 0, zIndex: 1000,
+          background: "rgba(20,20,25,0.75)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 20,
+        }}
+      >
+        <div
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: "100%", maxWidth: 800, background: "#000",
+            borderRadius: 16, overflow: "hidden", position: "relative",
+            aspectRatio: "16/9",
+          }}
+        >
+          <button
+            onClick={() => setShowVideo(false)}
+            aria-label="إغلاق"
+            style={{
+              position: "absolute", top: 10, left: 10, zIndex: 2,
+              width: 36, height: 36, borderRadius: "50%", border: "none",
+              background: "rgba(255,255,255,0.9)", color: C.text,
+              fontSize: 18, fontWeight: 900, cursor: "pointer",
+            }}
+          >
+            ✕
+          </button>
+          {INTRO_VIDEO_URL ? (
+            <iframe
+              src={INTRO_VIDEO_URL}
+              title="فيديو تعريفي عن تواصل"
+              allow="autoplay; fullscreen"
+              allowFullScreen
+              style={{ width: "100%", height: "100%", border: "none" }}
+            />
+          ) : (
+            <div style={{
+              width: "100%", height: "100%", display: "flex",
+              alignItems: "center", justifyContent: "center",
+              color: "#fff", fontFamily: "Cairo, sans-serif", fontSize: 16,
+              textAlign: "center", padding: 20,
+            }}>
+              الفيديو التعريفي هيتضاف قريباً 🎥
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 
@@ -1110,12 +1172,13 @@ function Footer() {
                 width:        40,
                 height:       40,
                 borderRadius: 11,
-                background:   C.primary,
                 display:      "flex",
                 alignItems:   "center",
                 justifyContent: "center",
-                fontSize:     18,
-              }}>🤝</div>
+                overflow:     "hidden",
+              }}>
+                <img src="/logo.jpg" alt="شعار تواصل" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+              </div>
               <span style={{
                 fontFamily: "Cairo, sans-serif",
                 fontWeight: 900,
