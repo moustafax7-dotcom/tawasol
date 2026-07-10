@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { specialistTokens as T } from "./theme";
+import { useTawaslDashboardData } from "../hooks/useTawaslDashboardData";
 
 function progressColor(p) {
   return p >= 70 ? T.success : p >= 45 ? T.warning : T.danger;
@@ -12,50 +13,16 @@ const statusColors = {
   "منتهية":        { bg:"#F0F0F0",     color:T.textMuted },
   "جارية":         { bg:T.primaryBg,   color:T.primary },
   "قادمة":         { bg:T.secondaryBg, color:T.secondary },
+  "ملغاة":         { bg:"#F0F0F0",     color:T.textMuted },
   "يحتاج متابعة": { bg:T.dangerBg,    color:T.danger },
   "مستقر":         { bg:T.successBg,   color:T.success },
   "ممتاز":         { bg:"#E8F4FD",     color:"#4A90C4" },
   "جديد":          { bg:T.secondaryBg, color:T.secondary },
 };
 
-// ─── Mock Data ──────────────────────────────────────────────────────────────
-const specialists = [
-  { id:"s1", name:"د. سارة محمود",  title:"أخصائية ABA",     rating:4.9, experienceYears:8,  status:"متاح",    todaySessions:5, totalSessions:340, nextSession:"10:00 ص" },
-  { id:"s2", name:"د. نورة أحمد",   title:"أخصائية PECS",    rating:4.7, experienceYears:5,  status:"في جلسة", todaySessions:3, totalSessions:195, nextSession:"11:30 ص" },
-  { id:"s3", name:"د. منى حسن",     title:"أخصائية Speech",  rating:4.8, experienceYears:6,  status:"متاح",    todaySessions:2, totalSessions:210, nextSession:"01:00 م" },
-  { id:"s4", name:"د. خالد يوسف",   title:"معالج سلوكي",     rating:4.9, experienceYears:10, status:"غير متاح",todaySessions:0, totalSessions:420, nextSession:null },
-];
-
-const cases = [
-  { id:"c1", childName:"أحمد محمد",  ageYears:7, specialistName:"د. سارة محمود", therapyType:"ABA",           stage:"المرحلة 3", progressPercent:78, mood:"سعيد",   status:"مستقر",         lastSession:"اليوم" },
-  { id:"c2", childName:"نور خالد",   ageYears:5, specialistName:"د. سارة محمود", therapyType:"PECS",          stage:"المرحلة 1", progressPercent:55, mood:"محايد",  status:"مستقر",         lastSession:"أمس" },
-  { id:"c3", childName:"يوسف علي",   ageYears:8, specialistName:"د. نورة أحمد",  therapyType:"ABA",           stage:"المرحلة 2", progressPercent:66, mood:"سعيد",   status:"ممتاز",         lastSession:"اليوم" },
-  { id:"c4", childName:"ليلى سامي",  ageYears:6, specialistName:"د. منى حسن",    therapyType:"ABA",           stage:"المرحلة 1", progressPercent:30, mood:"قلق",    status:"يحتاج متابعة",  lastSession:"منذ 4 أيام" },
-  { id:"c5", childName:"عمر حسام",   ageYears:9, specialistName:"د. سارة محمود", therapyType:"متابعة العلاج", stage:"المرحلة 3", progressPercent:78, mood:"سعيد",   status:"مستقر",         lastSession:"اليوم" },
-  { id:"c6", childName:"لين محمود",  ageYears:4, specialistName:"د. منى حسن",    therapyType:"Speech",        stage:"المرحلة 1", progressPercent:42, mood:"محايد",  status:"جديد",          lastSession:"أمس" },
-];
-
-const sessions = [
-  { id:"ss1", childName:"أحمد محمد", specialistName:"د. سارة محمود", time:"09:00 ص", durationMin:60, status:"منتهية", type:"ABA" },
-  { id:"ss2", childName:"نور خالد",  specialistName:"د. سارة محمود", time:"10:00 ص", durationMin:45, status:"جارية",  type:"PECS" },
-  { id:"ss3", childName:"يوسف علي",  specialistName:"د. نورة أحمد",  time:"11:30 ص", durationMin:60, status:"قادمة",  type:"ABA" },
-  { id:"ss4", childName:"ليلى سامي", specialistName:"د. منى حسن",    time:"01:00 م", durationMin:45, status:"قادمة",  type:"متابعة العلاج" },
-  { id:"ss5", childName:"عمر حسام",  specialistName:"د. سارة محمود", time:"02:30 م", durationMin:60, status:"قادمة",  type:"ABA" },
-];
-
-const reports = [
-  { id:"r1", childName:"أحمد محمد", specialistName:"د. سارة محمود", date:"السبت، 9 مارس 2030", progressPercent:78,
-    summary:"تقدم جيد في مهارات التواصل. الطفل يستجيب بشكل إيجابي لجلسات ABA.",
-    recommendations:["الاستمرار في تمارين التواصل البصري يومياً","إضافة أنشطة تعزيز اجتماعي","مراجعة الخطة العلاجية الشهر القادم"] },
-  { id:"r2", childName:"ليلى سامي",  specialistName:"د. منى حسن",    date:"الجمعة، 8 مارس 2030", progressPercent:30,
-    summary:"الحالة تحتاج متابعة مكثفة. معدل الحضور انخفض مؤخراً.",
-    recommendations:["زيادة عدد الجلسات الأسبوعية","إشراك الأسرة في خطة العلاج","تقييم شامل خلال أسبوعين"] },
-  { id:"r3", childName:"نور خالد",   specialistName:"د. سارة محمود", date:"الخميس، 7 مارس 2030", progressPercent:55,
-    summary:"تقدم متوسط. الطفل يظهر تحسن في مهارات اللغة.",
-    recommendations:["التركيز على تمارين النطق","تمارين منزلية يومية 20 دقيقة"] },
-];
-
-const currentUser = specialists[0];
+function todayLabel() {
+  return new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+}
 
 // ─── UI Components ──────────────────────────────────────────────────────────
 function StatusPill({ label }) {
@@ -125,55 +92,39 @@ function Btn({ children, onClick=undefined, variant="primary", size="md", style:
 // ─── NAV ────────────────────────────────────────────────────────────────────
 const NAV = [
   { id:"overview", label:"نظرة عامة", icon:"⊞" },
-  { id:"specialists", label:"الأخصائيون", icon:"👥" },
   { id:"cases", label:"الحالات", icon:"📋" },
   { id:"sessions", label:"الجلسات", icon:"📅" },
   { id:"reports", label:"التقارير", icon:"📊" },
 ];
 
 // ─── Pages ──────────────────────────────────────────────────────────────────
-function OverviewPage({ onNavigate }) {
+function OverviewPage({ onNavigate, cases, todaySessions, stats }) {
   const urgent = cases.filter(c => c.status === "يحتاج متابعة");
   const SBG = { "منتهية":T.border, "جارية":T.primaryBg, "قادمة":T.secondaryBg };
   const SC  = { "منتهية":T.textMuted, "جارية":T.primary, "قادمة":T.secondary };
   return (
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ marginBottom:28 }}>
-        <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>السبت، 9 مارس 2030</div>
+        <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
         <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>نظرة عامة</h1>
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-        <StatCard icon="📋" value={4}   label="الحالات النشطة"  sub="+5 هذا الأسبوع" accent={T.primary} />
-        <StatCard icon="⭐" value="4.9" label="متوسط التقييم"   sub="من 5.0 نجوم"    accent={T.warning} />
-        <StatCard icon="📅" value={18}  label="جلسات اليوم"     sub="4 أخصائيين"     accent={T.secondary} />
-        <StatCard icon="👥" value={4}   label="الأخصائيون"      sub="3 متاحون الآن"  accent={T.success} />
+        <StatCard icon="📋" value={stats.activeCases}       label="الحالات النشطة"   accent={T.primary} />
+        <StatCard icon="📈" value={`${stats.avgProgress}%`} label="متوسط التقدم"     accent={T.success} />
+        <StatCard icon="📅" value={stats.todaySessionsCount} label="جلسات اليوم"      accent={T.secondary} />
+        <StatCard icon="⚠️" value={stats.urgentCases}        label="تحتاج متابعة"     accent={T.danger} />
       </div>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
-        <Card style={{ padding:"20px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-            <h2 style={{ fontSize:16, fontWeight:800, color:T.text, margin:0 }}>حالة الأخصائيين</h2>
-            <Btn variant="secondary" size="sm" onClick={() => onNavigate("specialists")}>عرض الكل</Btn>
-          </div>
-          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-            {specialists.map(sp => (
-              <div key={sp.id} style={{ display:"flex", alignItems:"center", gap:12, paddingBottom:12, borderBottom:`1px solid ${T.border}` }}>
-                <Avatar name={sp.name} size={36} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:T.text }}>{sp.name}</div>
-                  <div style={{ fontSize:11, color:T.textMuted }}>{sp.todaySessions} جلسات اليوم</div>
-                </div>
-                <StatusPill label={sp.status} />
-              </div>
-            ))}
-          </div>
-        </Card>
+      <div style={{ marginBottom:20 }}>
         <Card style={{ padding:"20px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
             <h2 style={{ fontSize:16, fontWeight:800, color:T.text, margin:0 }}>جلسات اليوم</h2>
             <Btn variant="secondary" size="sm" onClick={() => onNavigate("sessions")}>عرض الكل</Btn>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {sessions.map(s => (
+            {todaySessions.length === 0 && (
+              <div style={{ fontSize:13, color:T.textMuted, padding:"12px 0" }}>مفيش جلسات مجدولة النهاردة.</div>
+            )}
+            {todaySessions.map(s => (
               <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:12, background:SBG[s.status]??T.surfaceAlt }}>
                 <div style={{ fontSize:13, fontWeight:700, minWidth:56, color:SC[s.status]??T.text }}>{s.time}</div>
                 <div style={{ flex:1 }}>
@@ -213,56 +164,7 @@ function OverviewPage({ onNavigate }) {
   );
 }
 
-function SpecialistsPage() {
-  return (
-    <div style={{ padding:"28px 28px 40px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
-        <div>
-          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>السبت، 9 مارس 2030</div>
-          <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>الأخصائيون</h1>
-        </div>
-        <Btn>+ إضافة أخصائي</Btn>
-      </div>
-      <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-        <StatCard icon="👥" value={specialists.length} label="إجمالي الأخصائيين" accent={T.secondary} />
-        <StatCard icon="✅" value={specialists.filter(s=>s.status==="متاح").length}    label="متاح الآن"  accent={T.success} />
-        <StatCard icon="🔄" value={specialists.filter(s=>s.status==="في جلسة").length} label="في جلسة"   accent={T.primary} />
-        <StatCard icon="⭐" value="4.9" label="متوسط التقييم" accent="#E9C84C" />
-      </div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(290px,1fr))", gap:18 }}>
-        {specialists.map(sp => (
-          <Card key={sp.id} style={{ padding:"20px" }}>
-            <div style={{ display:"flex", gap:14, marginBottom:16 }}>
-              <Avatar name={sp.name} size={48} />
-              <div style={{ flex:1 }}>
-                <div style={{ fontSize:15, fontWeight:800, color:T.text }}>{sp.name}</div>
-                <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>{sp.title}</div>
-                <div style={{ display:"flex", gap:8, flexWrap:"wrap", alignItems:"center" }}>
-                  <StatusPill label={sp.status} />
-                  <span style={{ fontSize:11, color:T.textMuted }}>⭐ {sp.rating} · {sp.experienceYears} سنوات</span>
-                </div>
-              </div>
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:16, padding:"12px 0", borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.border}` }}>
-              {[{label:"الجلسة التالية",value:sp.nextSession??"—"},{label:"جلسات اليوم",value:sp.todaySessions},{label:"إجمالي الجلسات",value:sp.totalSessions}].map(({label,value})=>(
-                <div key={label} style={{ textAlign:"center" }}>
-                  <div style={{ fontSize:16, fontWeight:800, color:T.text }}>{value}</div>
-                  <div style={{ fontSize:10, color:T.textMuted, marginTop:2 }}>{label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ display:"flex", gap:10 }}>
-              <Btn variant="secondary" size="sm" style={{ flex:1 }}>التقرير</Btn>
-              <Btn variant="primary"   size="sm" style={{ flex:1 }}>حجز جلسة</Btn>
-            </div>
-          </Card>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function CasesPage() {
+function CasesPage({ cases }) {
   const [filter, setFilter] = useState("الكل");
   const [view, setView]     = useState("cards");
   const FILTERS = ["الكل","يحتاج متابعة","مستقر","ممتاز","جديد"];
@@ -271,7 +173,7 @@ function CasesPage() {
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
         <div>
-          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>السبت، 9 مارس 2030</div>
+          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>الحالات</h1>
         </div>
         <Btn>+ إضافة حالة</Btn>
@@ -355,7 +257,7 @@ function CasesPage() {
   );
 }
 
-function SessionsPage() {
+function SessionsPage({ sessions, onUpdateStatus }) {
   const [filter, setFilter] = useState("الكل");
   const FILTERS = ["الكل","جارية","قادمة","منتهية"];
   const DOT = { "منتهية":T.textLight, "جارية":T.primary, "قادمة":T.secondary };
@@ -364,7 +266,7 @@ function SessionsPage() {
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
         <div>
-          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>السبت، 9 مارس 2030</div>
+          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>الجلسات</h1>
         </div>
         <Btn>+ حجز جلسة</Btn>
@@ -397,10 +299,16 @@ function SessionsPage() {
             <div style={{ fontSize:12, color:T.textMuted, background:T.surfaceAlt, padding:"4px 10px", borderRadius:8 }}>{s.durationMin} دقيقة</div>
             <StatusPill label={s.status} />
             <div style={{ display:"flex", gap:8 }}>
-              {s.status==="قادمة" && <Btn variant="ghost" size="sm">إلغاء</Btn>}
-              <Btn variant={s.status==="جارية"?"primary":"secondary"} size="sm">
-                {s.status==="جارية"?"انضمام":s.status==="منتهية"?"التقرير":"تفاصيل"}
-              </Btn>
+              {s.status==="قادمة" && (
+                <Btn variant="ghost" size="sm" onClick={() => onUpdateStatus?.(s.id, "ملغاة")}>إلغاء</Btn>
+              )}
+              {s.status==="قادمة" && (
+                <Btn variant="primary" size="sm" onClick={() => onUpdateStatus?.(s.id, "جارية")}>بدء الجلسة</Btn>
+              )}
+              {s.status==="جارية" && (
+                <Btn variant="primary" size="sm" onClick={() => onUpdateStatus?.(s.id, "منتهية")}>إنهاء الجلسة</Btn>
+              )}
+              {s.status==="منتهية" && <Btn variant="secondary" size="sm">التقرير</Btn>}
             </div>
           </div>
         ))}
@@ -409,20 +317,23 @@ function SessionsPage() {
   );
 }
 
-function ReportsPage() {
+function ReportsPage({ reports, cases }) {
   const [selected, setSelected] = useState(null);
+  const avgProgress = cases.length > 0
+    ? Math.round(cases.reduce((a,c)=>a+c.progressPercent,0)/cases.length)
+    : 0;
   return (
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
         <div>
-          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>السبت، 9 مارس 2030</div>
+          <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>التقارير</h1>
         </div>
         <Btn>+ تقرير جديد</Btn>
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
         <StatCard icon="📊" value={reports.length} label="التقارير هذا الشهر" accent={T.primary} />
-        <StatCard icon="📈" value={`${Math.round(cases.reduce((a,c)=>a+c.progressPercent,0)/cases.length)}%`} label="متوسط التقدم" accent={T.success} />
+        <StatCard icon="📈" value={`${avgProgress}%`} label="متوسط التقدم" accent={T.success} />
         <StatCard icon="⚠️" value={cases.filter(c=>c.status==="يحتاج متابعة").length} label="تحتاج متابعة" accent={T.danger} />
       </div>
       <div style={{ display:"grid", gridTemplateColumns:selected?"1fr 360px":"1fr", gap:20 }}>
@@ -489,7 +400,7 @@ function ReportsPage() {
 }
 
 // ─── Layout ─────────────────────────────────────────────────────────────────
-function Layout({ children, active, onNav }) {
+function Layout({ children, active, onNav, currentUser }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleNav = (id) => { onNav(id); setMenuOpen(false); };
@@ -630,17 +541,52 @@ function Layout({ children, active, onNav }) {
 // ─── App ─────────────────────────────────────────────────────────────────────
 export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
+  const {
+    loading, error, currentUser, cases, todaySessions, reports, stats, actions,
+  } = useTawaslDashboardData();
+
+  const globalStyle = `@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D0CCC4;border-radius:99px}button:active{opacity:0.8}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}`;
+
+  if (loading) {
+    return (
+      <>
+        <style>{globalStyle}</style>
+        <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
+          fontFamily:"'Tajawal',sans-serif", color:T.textMuted, fontSize:14 }}>
+          جاري تحميل البيانات...
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <style>{globalStyle}</style>
+        <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", gap:12, alignItems:"center", justifyContent:"center",
+          fontFamily:"'Tajawal',sans-serif", color:T.danger, fontSize:14 }}>
+          <div>حصل خطأ في تحميل البيانات: {error.message ?? "خطأ غير متوقع"}</div>
+          <Btn onClick={actions.refresh}>إعادة المحاولة</Btn>
+        </div>
+      </>
+    );
+  }
+
   const pages = {
-    overview:    <OverviewPage    onNavigate={setSection} />,
-    specialists: <SpecialistsPage />,
-    cases:       <CasesPage />,
-    sessions:    <SessionsPage />,
-    reports:     <ReportsPage />,
+    overview: (
+      <OverviewPage onNavigate={setSection} cases={cases} todaySessions={todaySessions} stats={stats} />
+    ),
+    cases: <CasesPage cases={cases} />,
+    sessions: <SessionsPage sessions={todaySessions} onUpdateStatus={actions.updateSessionStatus} />,
+    reports: <ReportsPage reports={reports} cases={cases} />,
   };
+
   return (
     <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D0CCC4;border-radius:99px}button:active{opacity:0.8}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}`}</style>
-      <Layout active={section} onNav={setSection}>{pages[section]}</Layout>
+      <style>{globalStyle}</style>
+      <Layout active={section} onNav={setSection} currentUser={currentUser}>
+        {pages[section]}
+      </Layout>
     </>
   );
 }
