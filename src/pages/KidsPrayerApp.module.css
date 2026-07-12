@@ -1,0 +1,151 @@
+.appFrame {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  box-sizing: border-box;
+  direction: rtl;
+}
+
+.appMainTitle {
+  font-size: 26px;
+  color: #2C2C3A;
+  font-weight: 900;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
+.appSubTitle {
+  font-size: 14px;
+  color: #8A8A9A;
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.orangeButton {
+  background-color: #E98A53;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 22px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: transform 0.2s, background-color 0.2s;
+  font-family: inherit;
+  box-shadow: 0 6px 18px rgba(233, 138, 83, 0.3);
+}
+
+.orangeButton:active {
+  transform: scale(0.97);
+  background-color: #d67943;
+}
+
+.menuBtn {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.actionBtn {
+  width: 100%;
+  justify-content: center;
+  margin-top: auto;
+}
+
+.secondaryStyle {
+  background-color: #F3A476;
+  box-shadow: none;
+}
+
+.starsRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 24px;
+}
+
+.starsText {
+  font-size: 13px;
+  color: #8A8A9A;
+  margin-right: 8px;
+}
+
+.stepTitle {
+  font-size: 24px;
+  color: #2C2C3A;
+  font-weight: 800;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.stepInstruction {
+  font-size: 14px;
+  color: #8A8A9A;
+  margin-bottom: 22px;
+  text-align: center;
+  line-height: 1.6;
+}
+
+.imagePlaceholderBox {
+  width: 100%;
+  height: 260px;
+  background-color: #FAF8F5;
+  border-radius: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+  border: 1.5px solid #EAE6DE;
+  overflow: hidden;
+}
+
+.badgeCounter {
+  background-color: #F0EEF8;
+  color: #8E80BC;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: bold;
+  margin-bottom: 22px;
+}
+
+.congratsTitle {
+  font-size: 28px;
+  color: #E98A53;
+  font-weight: 900;
+  margin-top: 30px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.congratsSub {
+  font-size: 15px;
+  color: #555555;
+  margin-bottom: 36px;
+  text-align: center;
+  padding: 0 10px;
+  line-height: 1.6;
+}
+
+.exitBtn {
+  align-self: flex-start;
+  margin-bottom: 18px;
+  background: #fff;
+  border: 2px solid #EAE6DE;
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #8A8A9A;
+  cursor: pointer;
+  font-family: inherit;
+}

@@ -6,9 +6,9 @@ import SequencingGame from "./SequencingGame";
 import ColorMatchGame from "./ColorMatchGame";
 import TracingGame from "./TracingGame";
 import MusicGame from "./MusicGame";
+import KidsPrayerApp from "./KidsPrayerApp";
 import { useKidsDashboardData } from "../hooks/useKidsDashboardData";
 import { supabase } from "../supabaseClient";
-import KidsPrayerApp from './KidsPrayerApp';
 
 const MOODS = [
   { id:"happy", emoji:"😄", label:"سعيد",  color:"#FFD93D", bg:"#FFFBEA", border:"#FFD93D" },
@@ -24,6 +24,7 @@ const GAMES = [
   { id:"colors",  emoji:"🎨", label:"خمّن اللون",     color:"#5BB88A", bg:"#EAF7F1", stars:3 },
   { id:"draw",    emoji:"✏️", label:"تتبّع الخطوط",   color:"#6BCB77", bg:"#EDFFF0", stars:5 },
   { id:"music",   emoji:"🎵", label:"الموسيقى",      color:"#74B9FF", bg:"#EEF6FF", stars:1 },
+  { id:"prayer",  emoji:"🕌", label:"الصلاة والوضوء", color:"#E98A53", bg:"#FEF0E8", stars:4 },
 ];
 
 const DAYS_AR = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
@@ -503,6 +504,11 @@ export default function KidsDashboard() {
     addGameReward({ localGameId: "music", score, level, coinsEarned: reward });
   };
 
+  const handlePrayerComplete = ({ activity }: { activity: "wudu" | "prayer" }) => {
+    const reward = activity === "wudu" ? 10 : 20;
+    addGameReward({ localGameId: "prayer", score: 100, level: activity === "wudu" ? 1 : 2, coinsEarned: reward });
+  };
+
   // لسه بيحمّل بيانات الأطفال
   if (childrenLoading) {
     return (
@@ -545,6 +551,9 @@ export default function KidsDashboard() {
   }
   if (activeGame === "music") {
     return <MusicGame onExit={() => setActive(null)} onComplete={handleMusicComplete} />;
+  }
+  if (activeGame === "prayer") {
+    return <KidsPrayerApp onExit={() => setActive(null)} onComplete={handlePrayerComplete} />;
   }
 
   const renderContent = () => {
@@ -589,9 +598,6 @@ export default function KidsDashboard() {
 
         {gameModal && <GameModal gameId={gameModal} onClose={() => setGame(null)} />}
       </div>
-      <section className="dashboard-section kids-prayer-section">
-  <KidsPrayerApp />
-</section>
     </>
   );
 }
