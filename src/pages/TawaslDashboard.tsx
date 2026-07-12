@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { specialistTokens as T } from "./theme";
 import { useTawaslDashboardData } from "../hooks/useTawaslDashboardData";
+import { supabase } from "../supabaseClient";
 
 function progressColor(p) {
   return p >= 70 ? T.success : p >= 45 ? T.warning : T.danger;
@@ -79,11 +80,11 @@ function StatCard({ icon, value, label, sub, accent=T.primary }) {
   );
 }
 
-function Btn({ children, onClick=undefined, variant="primary", size="md", style:ex={} }) {
+function Btn({ children, onClick=undefined, variant="primary", size="md", style:ex={}, type="button", disabled=false }) {
   const v = { primary:{background:T.primary,color:"#fff"}, secondary:{background:T.secondaryBg,color:T.secondary,border:`1px solid ${T.border}`}, ghost:{background:"transparent",color:T.textMuted,border:`1px solid ${T.border}`} };
   return (
-    <button onClick={onClick} style={{ border:"none", borderRadius:size==="sm"?8:10, padding:size==="sm"?"5px 12px":"9px 18px",
-      fontSize:size==="sm"?12:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", ...v[variant], ...ex }}>
+    <button type={type} disabled={disabled} onClick={onClick} style={{ border:"none", borderRadius:size==="sm"?8:10, padding:size==="sm"?"5px 12px":"9px 18px",
+      fontSize:size==="sm"?12:13, fontWeight:700, cursor:disabled?"default":"pointer", opacity:disabled?0.6:1, fontFamily:"inherit", ...v[variant], ...ex }}>
       {children}
     </button>
   );
@@ -98,10 +99,11 @@ const NAV = [
 ];
 
 // ─── Pages ──────────────────────────────────────────────────────────────────
-function OverviewPage({ onNavigate, cases, todaySessions, stats }) {
+function OverviewPage({ onNavigate, cases, sessionsToday }) {
   const urgent = cases.filter(c => c.status === "يحتاج متابعة");
-  const SBG = { "منتهية":T.border, "جارية":T.primaryBg, "قادمة":T.secondaryBg };
-  const SC  = { "منتهية":T.textMuted, "جارية":T.primary, "قادمة":T.secondary };
+  const avgProgress = cases.length > 0 ? Math.round(cases.reduce((a,c)=>a+c.progressPercent,0)/cases.length) : 0;
+  const SBG = { "منتهية":T.border, "جارية":T.primaryBg, "قادمة":T.secondaryBg, "ملغاة":T.border };
+  const SC  = { "منتهية":T.textMuted, "جارية":T.primary, "قادمة":T.secondary, "ملغاة":T.textMuted };
   return (
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ marginBottom:28 }}>
@@ -109,27 +111,44 @@ function OverviewPage({ onNavigate, cases, todaySessions, stats }) {
         <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>نظرة عامة</h1>
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-        <StatCard icon="📋" value={stats.activeCases}       label="الحالات النشطة"   accent={T.primary} />
-        <StatCard icon="📈" value={`${stats.avgProgress}%`} label="متوسط التقدم"     accent={T.success} />
-        <StatCard icon="📅" value={stats.todaySessionsCount} label="جلسات اليوم"      accent={T.secondary} />
-        <StatCard icon="⚠️" value={stats.urgentCases}        label="تحتاج متابعة"     accent={T.danger} />
+        <StatCard icon="📋" value={cases.length}        label="الحالات النشطة"   accent={T.primary} />
+        <StatCard icon="📈" value={`${avgProgress}%`}   label="متوسط التقدم"     accent={T.success} />
+        <StatCard icon="📅" value={sessionsToday.length} label="جلسات اليوم"      accent={T.secondary} />
+        <StatCard icon="⚠️" value={urgent.length}        label="تحتاج متابعة"     accent={T.danger} />
       </div>
-      <div style={{ marginBottom:20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
+        <Card style={{ padding:"20px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+            <h2 style={{ fontSize:16, fontWeight:800, color:T.text, margin:0 }}>حالاتي</h2>
+            <Btn variant="secondary" size="sm" onClick={() => onNavigate("cases")}>عرض الكل</Btn>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {cases.length === 0 && <div style={{ fontSize:13, color:T.textMuted, textAlign:"center", padding:20 }}>لسه مفيش حالات مربوطة بيك</div>}
+            {cases.slice(0, 5).map(c => (
+              <div key={c.id} style={{ display:"flex", alignItems:"center", gap:12, paddingBottom:12, borderBottom:`1px solid ${T.border}` }}>
+                <Avatar name={c.childName} size={36} />
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:T.text }}>{c.childName}</div>
+                  <div style={{ fontSize:11, color:T.textMuted }}>تقدم {c.progressPercent}%</div>
+                </div>
+                <StatusPill label={c.status} />
+              </div>
+            ))}
+          </div>
+        </Card>
         <Card style={{ padding:"20px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
             <h2 style={{ fontSize:16, fontWeight:800, color:T.text, margin:0 }}>جلسات اليوم</h2>
             <Btn variant="secondary" size="sm" onClick={() => onNavigate("sessions")}>عرض الكل</Btn>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {todaySessions.length === 0 && (
-              <div style={{ fontSize:13, color:T.textMuted, padding:"12px 0" }}>مفيش جلسات مجدولة النهاردة.</div>
-            )}
-            {todaySessions.map(s => (
+            {sessionsToday.length === 0 && <div style={{ fontSize:13, color:T.textMuted, textAlign:"center", padding:20 }}>مفيش جلسات مجدولة النهاردة</div>}
+            {sessionsToday.map(s => (
               <div key={s.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 12px", borderRadius:12, background:SBG[s.status]??T.surfaceAlt }}>
                 <div style={{ fontSize:13, fontWeight:700, minWidth:56, color:SC[s.status]??T.text }}>{s.time}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:T.text }}>{s.childName}</div>
-                  <div style={{ fontSize:11, color:T.textMuted }}>{s.specialistName} · {s.type}</div>
+                  <div style={{ fontSize:11, color:T.textMuted }}>{s.type}</div>
                 </div>
                 <span style={{ fontSize:11, fontWeight:700, color:SC[s.status]??T.textMuted }}>{s.status}</span>
               </div>
@@ -149,7 +168,7 @@ function OverviewPage({ onNavigate, cases, todaySessions, stats }) {
                 <div style={{ display:"flex", justifyContent:"space-between", marginBottom:10 }}>
                   <div>
                     <div style={{ fontSize:14, fontWeight:800, color:T.text }}>{c.childName}</div>
-                    <div style={{ fontSize:11, color:T.textMuted }}>{c.specialistName}</div>
+                    <div style={{ fontSize:11, color:T.textMuted }}>{c.ageYears} سنوات</div>
                   </div>
                   <StatusPill label={c.status} />
                 </div>
@@ -167,7 +186,7 @@ function OverviewPage({ onNavigate, cases, todaySessions, stats }) {
 function CasesPage({ cases }) {
   const [filter, setFilter] = useState("الكل");
   const [view, setView]     = useState("cards");
-  const FILTERS = ["الكل","يحتاج متابعة","مستقر","ممتاز","جديد"];
+  const FILTERS = ["الكل","يحتاج متابعة","مستقر","ممتاز"];
   const filtered = filter === "الكل" ? cases : cases.filter(c => c.status === filter);
   return (
     <div style={{ padding:"28px 28px 40px" }}>
@@ -176,7 +195,6 @@ function CasesPage({ cases }) {
           <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>الحالات</h1>
         </div>
-        <Btn>+ إضافة حالة</Btn>
       </div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:10 }}>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
@@ -197,6 +215,9 @@ function CasesPage({ cases }) {
           ))}
         </div>
       </div>
+      {filtered.length === 0 && (
+        <div style={{ textAlign:"center", padding:40, color:T.textMuted, fontSize:14 }}>مفيش حالات في القسم ده</div>
+      )}
       {view === "cards" ? (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:18 }}>
           {filtered.map(c => (
@@ -206,22 +227,14 @@ function CasesPage({ cases }) {
                   <Avatar name={c.childName} size={40} />
                   <div>
                     <div style={{ fontSize:14, fontWeight:800, color:T.text }}>{c.childName}</div>
-                    <div style={{ fontSize:11, color:T.textMuted }}>{c.ageYears} سنوات · {c.therapyType}</div>
+                    <div style={{ fontSize:11, color:T.textMuted }}>{c.ageYears} سنوات · مزاج {c.mood}</div>
                   </div>
                 </div>
                 <StatusPill label={c.status} />
               </div>
-              <div style={{ padding:"8px 12px", borderRadius:8, background:T.surfaceAlt, fontSize:12, color:T.textMuted, marginBottom:14, display:"flex", justifyContent:"space-between" }}>
-                <span>{c.specialistName}</span>
-                <span style={{ fontWeight:700, color:T.secondary }}>{c.stage}</span>
-              </div>
               <ProgressBar pct={c.progressPercent} />
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:12 }}>
                 <span style={{ fontSize:11, color:T.textMuted }}>آخر جلسة: {c.lastSession}</span>
-                <div style={{ display:"flex", gap:8 }}>
-                  <Btn variant="ghost"   size="sm">التقرير</Btn>
-                  <Btn variant="primary" size="sm">حجز جلسة</Btn>
-                </div>
               </div>
             </Card>
           ))}
@@ -231,7 +244,7 @@ function CasesPage({ cases }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
             <thead>
               <tr style={{ borderBottom:`2px solid ${T.border}` }}>
-                {["الطفل","العمر","الأخصائي","الخطة","التقدم","آخر جلسة","الحالة",""].map(h=>(
+                {["الطفل","العمر","المزاج","التقدم","آخر جلسة","الحالة"].map(h=>(
                   <th key={h} style={{ padding:"12px 14px", textAlign:"right", color:T.textMuted, fontWeight:700, fontSize:12 }}>{h}</th>
                 ))}
               </tr>
@@ -241,12 +254,10 @@ function CasesPage({ cases }) {
                 <tr key={c.id} style={{ background:i%2===0?T.surface:T.surfaceAlt }}>
                   <td style={{ padding:"12px 14px" }}><div style={{ display:"flex", gap:8, alignItems:"center" }}><Avatar name={c.childName} size={28}/><span style={{ fontWeight:700 }}>{c.childName}</span></div></td>
                   <td style={{ padding:"12px 14px", color:T.textMuted }}>{c.ageYears} سنوات</td>
-                  <td style={{ padding:"12px 14px" }}>{c.specialistName}</td>
-                  <td style={{ padding:"12px 14px", color:T.secondary, fontWeight:700 }}>{c.stage} - {c.therapyType}</td>
+                  <td style={{ padding:"12px 14px" }}>{c.mood}</td>
                   <td style={{ padding:"12px 14px", minWidth:120 }}><ProgressBar pct={c.progressPercent}/></td>
                   <td style={{ padding:"12px 14px", color:T.textMuted }}>{c.lastSession}</td>
                   <td style={{ padding:"12px 14px" }}><StatusPill label={c.status}/></td>
-                  <td style={{ padding:"12px 14px" }}><div style={{ display:"flex", gap:6 }}><Btn variant="ghost" size="sm">التقرير</Btn><Btn variant="primary" size="sm">عرض</Btn></div></td>
                 </tr>
               ))}
             </tbody>
@@ -257,11 +268,53 @@ function CasesPage({ cases }) {
   );
 }
 
-function SessionsPage({ sessions, onUpdateStatus }) {
+function BookSessionModal({ cases, onClose, onCreate }) {
+  const [childId, setChildId] = useState(cases[0]?.id || "");
+  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
+  const [time, setTime] = useState("");
+  const [duration, setDuration] = useState(45);
+  const [type, setType] = useState("ABA");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!childId || !time) { setErr("محتاجين الطفل والوقت"); return; }
+    setSaving(true);
+    const { error } = await onCreate({ childId, date, time, duration: Number(duration), type });
+    setSaving(false);
+    if (error) setErr(error); else onClose();
+  }
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(20,20,25,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <form onClick={(e)=>e.stopPropagation()} onSubmit={handleSubmit} style={{ background:T.surface, borderRadius:20, padding:24, width:"100%", maxWidth:380, display:"flex", flexDirection:"column", gap:12 }}>
+        <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:T.text }}>حجز جلسة جديدة</h3>
+        <select value={childId} onChange={(e)=>setChildId(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
+          {cases.map(c => <option key={c.id} value={c.id}>{c.childName}</option>)}
+        </select>
+        <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <input type="text" placeholder="الوقت (مثال: 10:00 ص)" value={time} onChange={(e)=>setTime(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <input type="number" placeholder="المدة (دقيقة)" value={duration} onChange={(e)=>setDuration(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <select value={type} onChange={(e)=>setType(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
+          {["ABA","PECS","Speech","متابعة العلاج"].map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        {err && <div style={{ color:T.danger, fontSize:12 }}>{err}</div>}
+        <div style={{ display:"flex", gap:10 }}>
+          <Btn type="button" variant="secondary" style={{ flex:1 }} onClick={onClose}>إلغاء</Btn>
+          <Btn type="submit" style={{ flex:1 }} disabled={saving}>{saving ? "جاري الحجز..." : "احجز"}</Btn>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function SessionsPage({ sessionsToday, cases, createSession, updateSessionStatus }) {
   const [filter, setFilter] = useState("الكل");
+  const [showModal, setShowModal] = useState(false);
   const FILTERS = ["الكل","جارية","قادمة","منتهية"];
-  const DOT = { "منتهية":T.textLight, "جارية":T.primary, "قادمة":T.secondary };
-  const filtered = filter === "الكل" ? sessions : sessions.filter(s => s.status === filter);
+  const DOT = { "منتهية":T.textLight, "جارية":T.primary, "قادمة":T.secondary, "ملغاة":T.textLight };
+  const filtered = filter === "الكل" ? sessionsToday : sessionsToday.filter(s => s.status === filter);
   return (
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
@@ -269,13 +322,13 @@ function SessionsPage({ sessions, onUpdateStatus }) {
           <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>الجلسات</h1>
         </div>
-        <Btn>+ حجز جلسة</Btn>
+        <Btn onClick={()=>setShowModal(true)} disabled={cases.length===0}>+ حجز جلسة</Btn>
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-        <StatCard icon="📅" value={sessions.length}                                      label="إجمالي اليوم" accent={T.secondary} />
-        <StatCard icon="🔄" value={sessions.filter(s=>s.status==="جارية").length}   label="جارية الآن"   accent={T.primary} />
-        <StatCard icon="⏳" value={sessions.filter(s=>s.status==="قادمة").length}   label="قادمة"        accent={T.warning} />
-        <StatCard icon="✅" value={sessions.filter(s=>s.status==="منتهية").length}  label="منتهية"       accent={T.success} />
+        <StatCard icon="📅" value={sessionsToday.length}                                      label="إجمالي اليوم" accent={T.secondary} />
+        <StatCard icon="🔄" value={sessionsToday.filter(s=>s.status==="جارية").length}   label="جارية الآن"   accent={T.primary} />
+        <StatCard icon="⏳" value={sessionsToday.filter(s=>s.status==="قادمة").length}   label="قادمة"        accent={T.warning} />
+        <StatCard icon="✅" value={sessionsToday.filter(s=>s.status==="منتهية").length}  label="منتهية"       accent={T.success} />
       </div>
       <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
         {FILTERS.map(f=>(
@@ -286,6 +339,7 @@ function SessionsPage({ sessions, onUpdateStatus }) {
         ))}
       </div>
       <Card style={{ padding:"8px 0" }}>
+        {filtered.length === 0 && <div style={{ textAlign:"center", padding:30, color:T.textMuted, fontSize:14 }}>مفيش جلسات في القسم ده</div>}
         {filtered.map((s,i) => (
           <div key={s.id} style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 20px",
             borderBottom:i<filtered.length-1?`1px solid ${T.border}`:undefined,
@@ -294,34 +348,69 @@ function SessionsPage({ sessions, onUpdateStatus }) {
             <div style={{ fontSize:15, fontWeight:800, color:T.text, minWidth:68 }}>{s.time}</div>
             <div style={{ flex:1 }}>
               <div style={{ fontSize:14, fontWeight:700, color:T.text }}>{s.childName}</div>
-              <div style={{ fontSize:12, color:T.textMuted }}>{s.specialistName} · {s.type}</div>
+              <div style={{ fontSize:12, color:T.textMuted }}>{s.type}</div>
             </div>
             <div style={{ fontSize:12, color:T.textMuted, background:T.surfaceAlt, padding:"4px 10px", borderRadius:8 }}>{s.durationMin} دقيقة</div>
             <StatusPill label={s.status} />
             <div style={{ display:"flex", gap:8 }}>
-              {s.status==="قادمة" && (
-                <Btn variant="ghost" size="sm" onClick={() => onUpdateStatus?.(s.id, "ملغاة")}>إلغاء</Btn>
-              )}
-              {s.status==="قادمة" && (
-                <Btn variant="primary" size="sm" onClick={() => onUpdateStatus?.(s.id, "جارية")}>بدء الجلسة</Btn>
-              )}
-              {s.status==="جارية" && (
-                <Btn variant="primary" size="sm" onClick={() => onUpdateStatus?.(s.id, "منتهية")}>إنهاء الجلسة</Btn>
-              )}
-              {s.status==="منتهية" && <Btn variant="secondary" size="sm">التقرير</Btn>}
+              {s.status==="قادمة" && <Btn variant="ghost" size="sm" onClick={()=>updateSessionStatus(s.id,"cancelled")}>إلغاء</Btn>}
+              {s.status==="قادمة" && <Btn variant="primary" size="sm" onClick={()=>updateSessionStatus(s.id,"in_progress")}>بدء</Btn>}
+              {s.status==="جارية" && <Btn variant="primary" size="sm" onClick={()=>updateSessionStatus(s.id,"completed")}>إنهاء</Btn>}
             </div>
           </div>
         ))}
       </Card>
+      {showModal && (
+        <BookSessionModal cases={cases} onClose={()=>setShowModal(false)} onCreate={createSession} />
+      )}
     </div>
   );
 }
 
-function ReportsPage({ reports, cases }) {
+function NewReportModal({ cases, onClose, onCreate }) {
+  const [childId, setChildId] = useState(cases[0]?.id || "");
+  const [content, setContent] = useState("");
+  const [progress, setProgress] = useState("");
+  const [recs, setRecs] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [err, setErr] = useState("");
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    if (!childId || !content.trim()) { setErr("محتاجين الطفل والملخص على الأقل"); return; }
+    setSaving(true);
+    const { error } = await onCreate({ childId, content: content.trim(), progress, recommendations: recs });
+    setSaving(false);
+    if (error) setErr(error); else onClose();
+  }
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(20,20,25,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <form onClick={(e)=>e.stopPropagation()} onSubmit={handleSubmit} style={{ background:T.surface, borderRadius:20, padding:24, width:"100%", maxWidth:420, display:"flex", flexDirection:"column", gap:12 }}>
+        <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:T.text }}>تقرير جديد</h3>
+        <select value={childId} onChange={(e)=>setChildId(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
+          {cases.map(c => <option key={c.id} value={c.id}>{c.childName}</option>)}
+        </select>
+        <textarea placeholder="الملخص" value={content} onChange={(e)=>setContent(e.target.value)} rows={4}
+          style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit", resize:"vertical" }} />
+        <input type="number" placeholder="نسبة التقدم %" value={progress} onChange={(e)=>setProgress(e.target.value)}
+          style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <textarea placeholder="التوصيات (افصل بينهم بفاصلة ,)" value={recs} onChange={(e)=>setRecs(e.target.value)} rows={3}
+          style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit", resize:"vertical" }} />
+        {err && <div style={{ color:T.danger, fontSize:12 }}>{err}</div>}
+        <div style={{ display:"flex", gap:10 }}>
+          <Btn type="button" variant="secondary" style={{ flex:1 }} onClick={onClose}>إلغاء</Btn>
+          <Btn type="submit" style={{ flex:1 }} disabled={saving}>{saving ? "جاري الحفظ..." : "حفظ التقرير"}</Btn>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function ReportsPage({ reports, cases, createReport }) {
   const [selected, setSelected] = useState(null);
-  const avgProgress = cases.length > 0
-    ? Math.round(cases.reduce((a,c)=>a+c.progressPercent,0)/cases.length)
-    : 0;
+  const [showModal, setShowModal] = useState(false);
+  const avgProgress = cases.length > 0 ? Math.round(cases.reduce((a,c)=>a+c.progressPercent,0)/cases.length) : 0;
   return (
     <div style={{ padding:"28px 28px 40px" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
@@ -329,13 +418,16 @@ function ReportsPage({ reports, cases }) {
           <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>التقارير</h1>
         </div>
-        <Btn>+ تقرير جديد</Btn>
+        <Btn onClick={()=>setShowModal(true)} disabled={cases.length===0}>+ تقرير جديد</Btn>
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-        <StatCard icon="📊" value={reports.length} label="التقارير هذا الشهر" accent={T.primary} />
+        <StatCard icon="📊" value={reports.length} label="إجمالي التقارير" accent={T.primary} />
         <StatCard icon="📈" value={`${avgProgress}%`} label="متوسط التقدم" accent={T.success} />
         <StatCard icon="⚠️" value={cases.filter(c=>c.status==="يحتاج متابعة").length} label="تحتاج متابعة" accent={T.danger} />
       </div>
+      {reports.length === 0 && (
+        <div style={{ textAlign:"center", padding:40, color:T.textMuted, fontSize:14 }}>لسه مفيش تقارير مكتوبة</div>
+      )}
       <div style={{ display:"grid", gridTemplateColumns:selected?"1fr 360px":"1fr", gap:20 }}>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           {reports.map(r => (
@@ -346,7 +438,7 @@ function ReportsPage({ reports, cases }) {
                   <Avatar name={r.childName} size={42} />
                   <div>
                     <div style={{ fontSize:15, fontWeight:800, color:T.text }}>{r.childName}</div>
-                    <div style={{ fontSize:12, color:T.textMuted }}>{r.specialistName} · {r.date}</div>
+                    <div style={{ fontSize:12, color:T.textMuted }}>{r.date}</div>
                   </div>
                 </div>
                 <div style={{ fontSize:20, fontWeight:900, color:progressColor(r.progressPercent) }}>{r.progressPercent}%</div>
@@ -354,7 +446,6 @@ function ReportsPage({ reports, cases }) {
               <ProgressBar pct={r.progressPercent} showLabel={false} />
               <p style={{ fontSize:13, color:T.textMuted, margin:"12px 0 14px", lineHeight:1.6 }}>{r.summary}</p>
               <div style={{ display:"flex", gap:8 }}>
-                <Btn variant="ghost" size="sm" onClick={e=>{e.stopPropagation()}}>تحميل PDF</Btn>
                 <Btn variant="primary" size="sm" onClick={e=>{e.stopPropagation();setSelected(r)}}>عرض التفاصيل</Btn>
               </div>
             </Card>
@@ -369,7 +460,6 @@ function ReportsPage({ reports, cases }) {
             <Avatar name={selected.childName} size={52} />
             <div style={{ marginTop:12, marginBottom:16 }}>
               <div style={{ fontSize:18, fontWeight:900, color:T.text }}>{selected.childName}</div>
-              <div style={{ fontSize:12, color:T.textMuted }}>{selected.specialistName}</div>
               <div style={{ fontSize:11, color:T.textLight, marginTop:2 }}>{selected.date}</div>
             </div>
             <div style={{ padding:"14px", borderRadius:12, background:T.surfaceAlt, marginBottom:16 }}>
@@ -380,27 +470,31 @@ function ReportsPage({ reports, cases }) {
               <div style={{ fontSize:12, fontWeight:700, color:T.textMuted, marginBottom:8 }}>الملخص</div>
               <p style={{ fontSize:13, color:T.text, lineHeight:1.7, margin:0 }}>{selected.summary}</p>
             </div>
-            <div style={{ marginBottom:20 }}>
-              <div style={{ fontSize:12, fontWeight:700, color:T.textMuted, marginBottom:10 }}>التوصيات</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {selected.recommendations.map((rec,i) => (
-                  <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start", padding:"10px 12px", borderRadius:10, background:T.primaryBg }}>
-                    <span style={{ color:T.primary, fontWeight:800 }}>•</span>
-                    <span style={{ fontSize:13, color:T.text, lineHeight:1.5 }}>{rec}</span>
-                  </div>
-                ))}
+            {selected.recommendations.length > 0 && (
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:T.textMuted, marginBottom:10 }}>التوصيات</div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {selected.recommendations.map((rec,i) => (
+                    <div key={i} style={{ display:"flex", gap:10, alignItems:"flex-start", padding:"10px 12px", borderRadius:10, background:T.primaryBg }}>
+                      <span style={{ color:T.primary, fontWeight:800 }}>•</span>
+                      <span style={{ fontSize:13, color:T.text, lineHeight:1.5 }}>{rec}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-            <Btn style={{ width:"100%" }}>تحميل التقرير PDF</Btn>
+            )}
           </Card>
         )}
       </div>
+      {showModal && (
+        <NewReportModal cases={cases} onClose={()=>setShowModal(false)} onCreate={createReport} />
+      )}
     </div>
   );
 }
 
 // ─── Layout ─────────────────────────────────────────────────────────────────
-function Layout({ children, active, onNav, currentUser }) {
+function Layout({ children, active, onNav, specialist }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleNav = (id) => { onNav(id); setMenuOpen(false); };
@@ -442,10 +536,10 @@ function Layout({ children, active, onNav, currentUser }) {
 
       {/* User */}
       <div style={{ padding:"14px 14px 20px", borderTop:"1px solid rgba(255,255,255,0.08)", display:"flex", alignItems:"center", gap:10 }}>
-        <Avatar name={currentUser.name} size={34} />
+        <Avatar name={specialist?.name || "..."} size={34} />
         <div style={{ overflow:"hidden" }}>
-          <div style={{ fontSize:12, fontWeight:700, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{currentUser.name}</div>
-          <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)" }}>{currentUser.title}</div>
+          <div style={{ fontSize:12, fontWeight:700, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{specialist?.name || "..."}</div>
+          <div style={{ fontSize:10, color:"rgba(255,255,255,0.4)" }}>{specialist?.specialization || ""}</div>
         </div>
       </div>
     </>
@@ -542,50 +636,25 @@ function Layout({ children, active, onNav, currentUser }) {
 export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
   const {
-    loading, error, currentUser, cases, todaySessions, reports, stats, actions,
+    specialist, cases, sessionsToday, reports, loading, error,
+    createSession, updateSessionStatus, createReport,
   } = useTawaslDashboardData();
 
-  const globalStyle = `@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D0CCC4;border-radius:99px}button:active{opacity:0.8}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}`;
-
-  if (loading) {
-    return (
-      <>
-        <style>{globalStyle}</style>
-        <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center",
-          fontFamily:"'Tajawal',sans-serif", color:T.textMuted, fontSize:14 }}>
-          جاري تحميل البيانات...
-        </div>
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
-        <style>{globalStyle}</style>
-        <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", gap:12, alignItems:"center", justifyContent:"center",
-          fontFamily:"'Tajawal',sans-serif", color:T.danger, fontSize:14 }}>
-          <div>حصل خطأ في تحميل البيانات: {error.message ?? "خطأ غير متوقع"}</div>
-          <Btn onClick={actions.refresh}>إعادة المحاولة</Btn>
-        </div>
-      </>
-    );
-  }
-
   const pages = {
-    overview: (
-      <OverviewPage onNavigate={setSection} cases={cases} todaySessions={todaySessions} stats={stats} />
-    ),
-    cases: <CasesPage cases={cases} />,
-    sessions: <SessionsPage sessions={todaySessions} onUpdateStatus={actions.updateSessionStatus} />,
-    reports: <ReportsPage reports={reports} cases={cases} />,
+    overview: <OverviewPage onNavigate={setSection} cases={cases} sessionsToday={sessionsToday} />,
+    cases:    <CasesPage cases={cases} />,
+    sessions: <SessionsPage sessionsToday={sessionsToday} cases={cases} createSession={createSession} updateSessionStatus={updateSessionStatus} />,
+    reports:  <ReportsPage reports={reports} cases={cases} createReport={createReport} />,
   };
-
   return (
     <>
-      <style>{globalStyle}</style>
-      <Layout active={section} onNav={setSection} currentUser={currentUser}>
-        {pages[section]}
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#D0CCC4;border-radius:99px}button:active{opacity:0.8}@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}`}</style>
+      <Layout active={section} onNav={setSection} specialist={specialist}>
+        {loading ? (
+          <div style={{ padding:60, textAlign:"center", color:T.textMuted, fontFamily:"'Tajawal',sans-serif" }}>
+            {error ? `حصل خطأ: ${error}` : "بنجهّز بياناتك..."}
+          </div>
+        ) : pages[section]}
       </Layout>
     </>
   );
