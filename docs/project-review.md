@@ -53,3 +53,31 @@ Run build, JS/JSX lint and policy tests. Then verify real parent/specialist/chil
 journeys, permission boundaries, refresh/logout, interrupted saves, duplicate game
 completion and responsive screenshots on a preview deployment. These runtime and
 backend checks remain outstanding; source review cannot establish their success.
+
+## Follow-up QA — 2026-10-15 UTC
+- Browser: cloud Chromium, default viewport (no mobile emulation performed).
+- Preview: home rendered; primary CTA reached /auth with labeled email/password.
+- Clicking forgot-password reproduced a 404. Added request/reset routes using
+  Supabase Auth. Email delivery and valid/expired-token E2E remain untested:
+  configure /auth/reset-password in the project's redirect allowlist and test
+  with a dedicated mailbox. No reset emails or passwords were submitted during QA.
+- Notification writes now require server-confirmed IDs and handle denied/partial
+  writes and network exceptions. Four isolated service tests added; these mocks
+  do not prove the production RLS policy.
+- Notification panel Escape now closes from descendants and returns focus.
+- Removed unsupported homepage audience/satisfaction totals. Specialist cards and
+  testimonial copy now explicitly identify illustrative data, not verified results.
+- Automated gate: npm test (7 tests), npm run lint (JS/JSX), npm run build.
+
+## Graduation defense and startup readiness
+Demonstrate one real parent-child-specialist journey with isolated synthetic data:
+register, verify email, provision profile, add child, assign an authorized
+specialist, save an activity, create a session/report, and verify parent visibility.
+Explain React routing versus database authorization and show denied cross-account
+requests. Document schema, triggers, migrations and the actual deployment.
+
+Before a real pilot: establish guardian consent, specialist verification, data
+retention/deletion, restore-tested backups, support ownership and incident logging.
+These are requirements to design and verify, not features this review implemented.
+Measure onboarding completion, successful saves and continued usage from actual
+consented analytics. Do not use fabricated adoption or clinical outcome metrics.
