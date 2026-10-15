@@ -6,7 +6,7 @@
 // toggleBtn/errorText — الأسماء دي كانت موجودة فعلاً في الـ CSS
 // المسترجع، فالمكوّن اتكتب ليطابقها بالظبط).
 // ============================================================
-import { useState } from "react";
+import { useId, useState } from "react";
 import styles from "./InputField.module.css";
 
 export default function InputField({
@@ -18,15 +18,19 @@ export default function InputField({
   autoComplete,
   placeholder,
 }) {
+  const inputId = useId();
+  const errorId = `${inputId}-error`;
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
   const actualType = isPassword ? (showPassword ? "text" : "password") : type;
 
   return (
     <div className={styles.field}>
-      {label && <label className={styles.label}>{label}</label>}
+      {label && <label htmlFor={inputId} className={styles.label}>{label}</label>}
       <div className={`${styles.inputWrapper} ${error ? styles.inputError : ""}`}>
         <input
+          id={inputId}
+          aria-describedby={error ? errorId : undefined}
           className={styles.input}
           type={actualType}
           value={value}
@@ -46,7 +50,7 @@ export default function InputField({
           </button>
         )}
       </div>
-      {error && <span className={styles.errorText}>{error}</span>}
+      {error && <span id={errorId} className={styles.errorText}>{error}</span>}
     </div>
   );
 }
