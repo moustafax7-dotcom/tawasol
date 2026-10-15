@@ -26,6 +26,7 @@ export default function NotificationBell({ color = "#2C6E8A" }) {
   const { items, unreadCount, markAsRead, markAllRead, loading, error, refresh } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const toggleRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -36,8 +37,9 @@ export default function NotificationBell({ color = "#2C6E8A" }) {
   }, []);
 
   return (
-    <div ref={ref} style={{ position: "relative", fontFamily: "inherit" }}>
+    <div ref={ref} onKeyDown={(event) => { if (event.key === "Escape") { setOpen(false); toggleRef.current?.focus(); } }} style={{ position: "relative", fontFamily: "inherit" }}>
       <button
+        ref={toggleRef}
         onClick={() => setOpen((o) => !o)}
         aria-label="الإشعارات"
         aria-expanded={open}

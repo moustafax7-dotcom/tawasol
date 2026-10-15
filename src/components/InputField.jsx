@@ -17,6 +17,7 @@ export default function InputField({
   error,
   autoComplete,
   placeholder,
+  required = false,
 }) {
   const inputId = useId();
   const errorId = `${inputId}-error`;
@@ -29,6 +30,7 @@ export default function InputField({
       {label && <label htmlFor={inputId} className={styles.label}>{label}</label>}
       <div className={`${styles.inputWrapper} ${error ? styles.inputError : ""}`}>
         <input
+          required={required}
           id={inputId}
           aria-describedby={error ? errorId : undefined}
           className={styles.input}
