@@ -1,6 +1,6 @@
 // src/pages/NotFound.jsx
 import { Link } from "react-router-dom";
-import { COLORS, FONTS } from "../styles/theme";
+import { kidsTokens } from "./theme";
 
 export default function NotFound() {
   return (
@@ -12,18 +12,18 @@ export default function NotFound() {
         alignItems: "center",
         justifyContent: "center",
         gap: 16,
-        background: COLORS.background,
+        background: kidsTokens.bg,
         textAlign: "center",
         padding: 24,
       }}
     >
-      <h1 style={{ fontFamily: FONTS.heading, fontSize: 64, color: COLORS.primary }}>404</h1>
-      <p style={{ color: COLORS.textMid, fontSize: 16 }}>الصفحة اللي بتدور عليها مش موجودة.</p>
+      <h1 style={{ fontFamily: "Cairo, sans-serif", fontSize: 64, color: kidsTokens.primary }}>404</h1>
+      <p style={{ color: kidsTokens.textMuted, fontSize: 16 }}>الصفحة اللي بتدور عليها مش موجودة.</p>
       <Link
         to="/"
         style={{
-          color: COLORS.white,
-          background: COLORS.primary,
+          color: kidsTokens.surface,
+          background: kidsTokens.primary,
           padding: "10px 24px",
           borderRadius: 50,
           textDecoration: "none",

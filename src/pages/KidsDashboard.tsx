@@ -6,7 +6,7 @@ import SequencingGame from "./SequencingGame";
 import ColorMatchGame from "./ColorMatchGame";
 import TracingGame from "./TracingGame";
 import MusicGame from "./MusicGame";
-import KidsPrayerApp from "./KidsPrayerApp";
+import KidsPrayerApp from "./KidsprayerApp";
 import { useKidsDashboardData } from "../hooks/useKidsDashboardData";
 import { supabase } from "../supabaseClient";
 

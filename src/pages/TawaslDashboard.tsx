@@ -639,7 +639,7 @@ export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
   const {
     specialist, cases, sessionsToday, reports, loading, error,
-    createSession, updateSessionStatus, createReport,
+    createSession, updateSessionStatus, createReport, refresh,
   } = useTawaslDashboardData();
 
   const pages = {
@@ -654,7 +654,12 @@ export default function SpecialistDashboard() {
       <Layout active={section} onNav={setSection} specialist={specialist}>
         {loading ? (
           <div style={{ padding:60, textAlign:"center", color:T.textMuted, fontFamily:"'Tajawal',sans-serif" }}>
-            {error ? `حصل خطأ: ${error}` : "بنجهّز بياناتك..."}
+            بنجهّز بياناتك...
+          </div>
+        ) : error ? (
+          <div role="alert" dir="rtl" style={{ padding: 32, textAlign: "center" }}>
+            <p>{error}</p>
+            <button type="button" onClick={refresh} style={{ marginTop: 16, padding: "12px 20px" }}>إعادة المحاولة</button>
           </div>
         ) : pages[section]}
       </Layout>
