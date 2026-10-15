@@ -6,6 +6,7 @@ import Landing from './pages/Landing'
 import ProfileRecovery from './pages/ProfileRecovery'
 import NotFound from './pages/NotFound'
 import Auth from './pages/Auth'
+import PasswordRecovery from './pages/PasswordRecovery'
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard'))
 const KidsDashboard = lazy(() => import('./pages/KidsDashboard'))
 const TawaslDashboard = lazy(() => import('./pages/TawaslDashboard'))
@@ -23,6 +24,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/forgot-password" element={<PasswordRecovery key="forgot" />} />
+          <Route path="/auth/reset-password" element={<PasswordRecovery key="reset" reset />} />
           <Route path="/complete-profile" element={<ProfileRecovery />} />
           <Route path="*" element={<NotFound />} />
           <Route
