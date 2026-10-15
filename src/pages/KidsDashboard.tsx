@@ -518,6 +518,10 @@ export default function KidsDashboard() {
     );
   }
 
+  if (error && children.length === 0) {
+    return <div role="alert" style={{ padding: 32, textAlign: "center" }}>تعذر تحميل بيانات الطفل. <a href="/parent">الرجوع لولي الأمر</a></div>;
+  }
+
   // مفيش طفل مسجل خالص
   if (children.length === 0) {
     return (
@@ -525,6 +529,7 @@ export default function KidsDashboard() {
         <div style={{ fontSize:40 }}>👶</div>
         <div style={{ fontWeight:800, color:K.text }}>لسه مفيش طفل مسجل</div>
         <div style={{ fontSize:13, color:K.textMuted }}>ارجع للوحة ولي الأمر وأضف بيانات طفلك الأول</div>
+        <a href="/parent">إضافة طفل</a>
       </div>
     );
   }
@@ -589,6 +594,7 @@ export default function KidsDashboard() {
         <Header points={points} />
 
         <div style={{ padding:"0 16px", maxWidth:600, margin:"0 auto" }}>
+          {error && <div role="alert" style={{ padding: 16, color: "#9B3030", background: "#FFF0F0", borderRadius: 12, marginBottom: 16 }}>{error}</div>}
           {loading ? (
             <div style={{ textAlign:"center", padding:40, color:K.textMuted }}>بيتحمّل...</div>
           ) : renderContent()}

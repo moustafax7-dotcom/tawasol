@@ -187,7 +187,7 @@ function useInView(threshold = 0.15) {
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
-  }, []);
+  }, [threshold]);
 
   return [ref, inView];
 }
@@ -710,7 +710,7 @@ const FEATURES = {
     { icon: "⭐", title: "نظام النجوم والمستويات",  color: C.green,   desc: "كل نشاط = نجوم، كل نجوم = مكافأة افتراضية جميلة تحفّز العودة." },
     { icon: "🦋", title: "رفيق مخصص",              color: C.lavender, desc: "شخصية مرسومة ترافق الطفل في كل مكان — قابلة للتخصيص الكامل." },
     { icon: "🎵", title: "تحفيز سمعي هادئ",         color: C.primaryLight, desc: "أصوات طبيعية ناعمة اختيارية — بدون مفاجآت تسبب ضيقاً حسياً." },
-    { icon: "🌈", title: "Offline Mode كامل",       color: C.teal,    desc: "كل الألعاب تعمل بدون إنترنت — لا يتوقف تقدم الطفل في أي مكان." },
+    { icon: "🌈", title: "أنشطة تفاعلية متنوعة",       color: C.teal,    desc: "ألعاب وأنشطة للتعلم والممارسة. يلزم اتصال بالإنترنت لحفظ النتائج ومتابعتها." },
   ],
   mother: [
     { icon: "📊", title: "تقارير المزاج اليومية",  color: C.primary, desc: "خط زمني بصري يُظهر حالة طفلك على مدار الأسبوع — بلمحة واحدة." },
