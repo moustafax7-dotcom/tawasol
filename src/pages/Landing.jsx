@@ -383,7 +383,7 @@ function HeroSection() {
               width: 8, height: 8, borderRadius: "50%",
               background: C.green, display: "inline-block",
             }} />
-            منصة رائدة لدعم أطفال التوحد في مصر
+            مساحة للتعلّم والتواصل والمتابعة
           </div>
 
           {/* Headline */}
@@ -436,9 +436,9 @@ function HeroSection() {
           {/* Stats */}
           <div style={{ display: "flex", gap: 32, marginTop: 44 }}>
             {[
-              { num: "+2000", label: "طفل مستفيد" },
-              { num: "98%",   label: "رضا الأسر" },
-              { num: "150+",  label: "أخصائي معتمد" },
+              { num: "طفل", label: "أنشطة وتعلّم" },
+              { num: "أسرة", label: "متابعة ومساندة" },
+              { num: "أخصائي", label: "جلسات وتقارير" },
             ].map(({ num, label }) => (
               <div key={label}>
                 <div style={{
@@ -653,10 +653,10 @@ function HeroCard() {
 // ─────────────────────────────────────────────────────────────
 function StatsSection() {
   const stats = [
-    { icon: "👶", num: "2,400+", label: "طفل يستخدم المنصة" },
-    { icon: "👩‍⚕️", num: "150+",  label: "أخصائي نفسي معتمد" },
-    { icon: "🎮", num: "80+",   label: "لعبة علاجية تفاعلية" },
-    { icon: "⭐", num: "4.9/5", label: "متوسط التقييم" },
+    { icon: "👶", num: "للطفل", label: "أنشطة تفاعلية" },
+    { icon: "👩‍⚕️", num: "للأخصائي", label: "متابعة الجلسات" },
+    { icon: "🎮", num: "للتعلّم", label: "ألعاب وممارسة" },
+    { icon: "⭐", num: "للأسرة", label: "متابعة الأنشطة" },
   ];
 
   return (
@@ -890,7 +890,7 @@ function SpecialistsSection() {
     <section id="specialists" style={{ padding: "96px 5%", background: C.bg }}>
       <div style={{ maxWidth: 1100, margin: "0 auto" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 54 }}>
-          <SectionLabel text="فريقنا من الخبراء" color={C.green} />
+          <SectionLabel text="نماذج توضيحية" color={C.green} />
           <h2 style={{
             fontFamily:   "Cairo, sans-serif",
             fontSize:     "clamp(26px, 3vw, 40px)",
@@ -898,8 +898,9 @@ function SpecialistsSection() {
             marginBottom: 14,
             color:        C.text,
           }}>
-            أخصائيون معتمدون في خدمتكم
+            تعرّف على شكل دليل الأخصائيين
           </h2>
+          <p>الأسماء والتقييمات وأعداد الجلسات التالية بيانات عرض تجريبية، وليست قائمة مقدّمي خدمة متاحين للحجز.</p>
         </Reveal>
 
         <div style={{
@@ -946,7 +947,7 @@ function SpecialistsSection() {
                   marginBottom: 16,
                 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.green }} />
-                  <span style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>متاح الآن</span>
+                  <span style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>ملف توضيحي</span>
                 </div>
                 <button style={{
                   width:        "100%",
@@ -1004,15 +1005,16 @@ function TestimonialsSection() {
     }}>
       <div style={{ maxWidth: 1000, margin: "0 auto" }}>
         <Reveal style={{ textAlign: "center", marginBottom: 52 }}>
-          <SectionLabel text="آراء الأسر" color={C.lavender} />
+          <SectionLabel text="سيناريوهات توضيحية" color={C.lavender} />
           <h2 style={{
             fontFamily: "Cairo, sans-serif",
             fontSize:   "clamp(26px, 3vw, 38px)",
             fontWeight: 900,
             color:      C.text,
           }}>
-            ماذا يقول مستخدمونا؟
+            كيف يمكن أن تستفيد الأسرة؟
           </h2>
+          <p>النصوص التالية أمثلة توضيحية، وليست شهادات مستخدمين أو دليلًا على نتائج علاجية. المنصة لا تغني عن تقييم أخصائي مؤهّل.</p>
         </Reveal>
 
         <div style={{
@@ -1097,7 +1099,7 @@ function CTASection() {
           maxWidth:     480,
           margin:       "0 auto 40px",
         }}>
-          انضم لأكثر من 2000 أسرة تثق في تواصل لدعم تطور أطفالها
+          ابدأ باستكشاف الأنشطة ومتابعة طفلك مع الأسرة والأخصائي.
         </p>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
           <button style={{
@@ -1229,7 +1231,7 @@ function Footer() {
           flexWrap:    "wrap",
           gap:         12,
         }}>
-          <span style={{ fontSize: 13 }}>© 2025 منصة تواصل — جميع الحقوق محفوظة</span>
+          <span style={{ fontSize: 13 }}>© 2026 منصة تواصل — جميع الحقوق محفوظة</span>
           <span style={{ fontSize: 13 }}>صُنع بـ ❤️ لأطفالنا</span>
         </div>
       </div>
