@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './routes/ProtectedRoute'
 import Landing from './pages/Landing'
+import ProfileRecovery from './pages/ProfileRecovery'
+import NotFound from './pages/NotFound'
 import Auth from './pages/Auth'
 import ParentDashboard from './pages/ParentDashboard'
 import KidsDashboard from './pages/KidsDashboard'
@@ -19,6 +21,8 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/complete-profile" element={<ProfileRecovery />} />
+          <Route path="*" element={<NotFound />} />
           <Route
             path="/parent"
             element={
