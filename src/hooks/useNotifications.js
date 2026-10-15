@@ -1,6 +1,7 @@
 // src/hooks/useNotifications.js
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
+import { persistReadNotifications } from "../services/notificationService";
 import { useAuth } from "../context/AuthContext";
 
 export function useNotifications() {
@@ -40,22 +41,37 @@ export function useNotifications() {
     return () => clearInterval(interval);
   }, [load]);
 
-  async function markAsRead(id) {
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+  async function markRead(ids) {
+    setError(null);
+    try {
+      const savedIds = await persistReadNotifications(supabase, profile?.id, ids);
+      setItems(previous => previous.map(item => savedIds.includes(item.id) ? { ...item, is_read: true } : item));
+      return true;
+    } catch {
+      setError("تعذر حفظ حالة الإشعارات. حاول مرة أخرى.");
+      return false;
+    }
   }
 
-  async function markAllRead() {
-    const unreadIds = items.filter((n) => !n.is_read).map((n) => n.id);
-    if (unreadIds.length === 0) return;
-    setItems((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+  function markAsRead(id) {
+    return markRead([id]);
+  }
+
+  function markAllRead() {
+    return markRead(items.filter(item => !item.is_read).map(item => item.id));
   }
 
   async function notifySelf({ type, title, message }) {
-    if (!profile?.id) return;
-    await supabase.from("notifications").insert({ user_id: profile.id, type, title, message });
-    load();
+    if (!profile?.id) return false;
+    try {
+      const { error: saveError } = await supabase.from("notifications").insert({ user_id: profile.id, type, title, message });
+      if (saveError) throw saveError;
+      await load();
+      return true;
+    } catch {
+      setError("تعذر حفظ الإشعار. حاول مرة أخرى.");
+      return false;
+    }
   }
 
   const unreadCount = items.filter((n) => !n.is_read).length;
