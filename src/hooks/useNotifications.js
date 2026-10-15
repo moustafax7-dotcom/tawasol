@@ -7,21 +7,32 @@ export function useNotifications() {
   const { profile } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
     if (!profile?.id) return;
     setLoading(true);
-    const { data } = await supabase
+    setError(null);
+    try {
+    const { data, error: queryError } = await supabase
       .from("notifications")
       .select("*")
       .eq("user_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(20);
+    if (queryError) throw queryError;
     setItems(data || []);
-    setLoading(false);
-  }, [profile?.id]);
+    } catch {
+      setError("تعذر تحميل الإشعارات. حاول مرة أخرى.");
+    } finally {
+      setLoading(false);
+    }
+  }, [profile]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = setTimeout(load, 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   // تحديث تلقائي كل 30 ثانية — بديل بسيط لـ Realtime subscription
   useEffect(() => {
@@ -49,5 +60,5 @@ export function useNotifications() {
 
   const unreadCount = items.filter((n) => !n.is_read).length;
 
-  return { items, unreadCount, loading, markAsRead, markAllRead, notifySelf, refresh: load };
+  return { items, unreadCount, loading, error, markAsRead, markAllRead, notifySelf, refresh: load };
 }

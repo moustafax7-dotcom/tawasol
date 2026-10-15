@@ -94,12 +94,13 @@ export function useKidsDashboardData() {
     try {
       const today = todayStr();
 
-      let { data: tasks } = await supabase
+      let { data: tasks, error: tasksError } = await supabase
         .from("daily_tasks")
         .select("*")
         .eq("child_id", childId)
         .eq("task_date", today);
 
+      if (tasksError) throw new Error("تعذر تحميل المهام. حاول مرة أخرى.");
       if (!tasks || tasks.length === 0) {
         const rows = DEFAULT_TASKS.map((t) => ({
           child_id: childId,
@@ -119,18 +120,20 @@ export function useKidsDashboardData() {
       setTasksToday(tasks || []);
 
       // النقاط (rewards) — أنشئ صف لو مش موجود
-      let { data: reward } = await supabase
+      let { data: reward, error: rewardError } = await supabase
         .from("rewards")
         .select("*")
         .eq("child_id", childId)
         .maybeSingle();
 
+      if (rewardError) throw new Error("تعذر تحميل النقاط.");
       if (!reward) {
-        const { data: newReward } = await supabase
+        const { data: newReward, error: newRewardError } = await supabase
           .from("rewards")
           .insert({ child_id: childId, coins: 0 })
           .select()
           .single();
+        if (newRewardError) throw new Error("تعذر تجهيز سجل النقاط.");
         reward = newReward;
       }
       setPoints(reward?.coins ?? 0);
@@ -142,7 +145,9 @@ export function useKidsDashboardData() {
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) loadChildData(selectedChildId);
+    if (!selectedChildId) return;
+    const timer = setTimeout(() => loadChildData(selectedChildId), 0);
+    return () => clearTimeout(timer);
   }, [selectedChildId, loadChildData]);
 
   // تبديل حالة مهمة (خلصت / لسه)
@@ -157,6 +162,7 @@ export function useKidsDashboardData() {
 
     const { error } = await supabase.from("daily_tasks").update({ done: newDone }).eq("id", taskId);
     if (error) {
+      setError("لم يتم حفظ المهمة. حاول مرة أخرى.");
       // رجّع الحالة القديمة لو فشل التحديث
       setTasksToday((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !newDone } : t)));
       return;
