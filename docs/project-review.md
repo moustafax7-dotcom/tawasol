@@ -81,3 +81,9 @@ retention/deletion, restore-tested backups, support ownership and incident loggi
 These are requirements to design and verify, not features this review implemented.
 Measure onboarding completion, successful saves and continued usage from actual
 consented analytics. Do not use fabricated adoption or clinical outcome metrics.
+
+### QA-R01 — confirmed hosting deep-link failure
+Reloading /auth/forgot-password returned Vercel's 404 NOT_FOUND (not the React
+404). Added SPA fallback rewrites for extensionless paths; static file requests
+remain excluded. Acceptance: direct request/reload of auth and protected routes
+loads React, and unknown app routes use the application's 404. Retest on preview.
