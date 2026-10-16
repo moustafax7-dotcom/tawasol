@@ -91,6 +91,10 @@ export function useParentDashboardData() {
         supabase.from("game_sessions").select("*, games(title, category)").eq("child_id", childId).gte("played_at", `${today}T00:00:00`).order("played_at", { ascending: false }),
       ]);
 
+      for (const result of [specialistLinkRes, moodTodayRes, weekMoodsRes, tasksRes, sessionsRes]) {
+        if (result.error) throw new Error("تعذر تحميل بيانات المتابعة. حاول مرة أخرى.");
+      }
+
       // الأخصائي المتابع
       let specialist = null;
       const specId = specialistLinkRes.data?.[0]?.specialist_id;
@@ -122,13 +126,14 @@ export function useParentDashboardData() {
       const doneCount = tasksToday.filter((t) => t.done).length;
       const progress = tasksToday.length > 0 ? Math.round((doneCount / tasksToday.length) * 100) : 0;
 
-      const { data: last14 } = await supabase
+      const { data: last14, error: historyError } = await supabase
         .from("daily_tasks")
         .select("task_date, done")
         .eq("child_id", childId)
         .gte("task_date", new Date(Date.now() - 13 * 86400000).toISOString().slice(0, 10))
         .order("task_date", { ascending: false });
 
+      if (historyError) throw new Error("تعذر تحميل سجل المهام.");
       let streak = 0;
       if (last14?.length) {
         const byDate = {};
@@ -156,7 +161,9 @@ export function useParentDashboardData() {
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) loadChildData(selectedChildId);
+    if (!selectedChildId) return;
+    const timer = setTimeout(() => loadChildData(selectedChildId), 0);
+    return () => clearTimeout(timer);
   }, [selectedChildId, loadChildData]);
 
   const selectedChild = children.find((c) => c.id === selectedChildId) || null;
