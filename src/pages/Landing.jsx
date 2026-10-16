@@ -154,6 +154,7 @@ const GlobalStyles = () => (
       border-radius: 71% 29% 60% 40% / 40% 60% 40% 60%;
     }
 
+    section[id] { scroll-margin-top: 140px; }
     /* Responsive */
     @media (max-width: 768px) {
       .hero-grid   { grid-template-columns: 1fr !important; }
@@ -163,7 +164,9 @@ const GlobalStyles = () => (
       .test-grid   { grid-template-columns: 1fr !important; }
       .steps-grid  { grid-template-columns: 1fr !important; }
       .footer-grid { grid-template-columns: 1fr !important; }
-      .nav-links   { display: none !important; }
+      .landing-nav { height: auto !important; min-height: 70px; flex-wrap: wrap; padding: 12px 4% !important; gap: 12px; background: #F0EDE8 !important; }
+      .nav-links { width: 100%; gap: 16px !important; overflow-x: auto; padding-bottom: 6px; }
+      .nav-links > * { flex-shrink: 0; }
       .hero-card   { display: none !important; }
     }
     @media (max-width: 480px) {
@@ -240,10 +243,6 @@ function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  function scrollToSection(id) {
-    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
-  }
-
   const NAV_LINKS = [
     { label: "الرئيسية",    id: "hero" },
     { label: "من نحن",      id: "how-it-works" },
@@ -252,7 +251,7 @@ function Navbar() {
   ];
 
   return (
-    <nav style={{
+    <nav className="landing-nav" aria-label="التنقل الرئيسي" style={{
       position:       "fixed",
       top:            0,
       right:          0,
@@ -269,9 +268,8 @@ function Navbar() {
       transition:     "all 0.35s",
     }}>
       {/* Logo */}
-      <div
-        onClick={() => scrollToSection("hero")}
-        style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}
+      <a href="#hero" aria-label="تواصل — الرئيسية"
+        style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", textDecoration: "none" }}
       >
         <div style={{
           width:        42,
@@ -292,12 +290,12 @@ function Navbar() {
         }}>
           تواصل
         </span>
-      </div>
+      </a>
 
       {/* Links */}
       <div className="nav-links" style={{ display: "flex", gap: 36, alignItems: "center" }}>
         {NAV_LINKS.map(link => (
-          <a key={link.id} className="nav-link" onClick={() => scrollToSection(link.id)}>
+          <a key={link.id} className="nav-link" href={`#${link.id}`}>
             {link.label}
           </a>
         ))}
@@ -306,7 +304,7 @@ function Navbar() {
           style={{ padding: "10px 24px", fontSize: 14 }}
           onClick={() => navigate("/auth")}
         >
-          ابدأ سجل
+          سجّل دخولك
         </button>
       </div>
     </nav>
@@ -949,7 +947,7 @@ function SpecialistsSection() {
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: C.green }} />
                   <span style={{ fontSize: 12, color: C.green, fontWeight: 600 }}>ملف توضيحي</span>
                 </div>
-                <button style={{
+                <button disabled title="بيانات تجريبية — الحجز غير متاح لهذا الملف" style={{
                   width:        "100%",
                   background:   color + "14",
                   color,
@@ -965,7 +963,7 @@ function SpecialistsSection() {
                   onMouseEnter={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = "white"; }}
                   onMouseLeave={e => { e.currentTarget.style.background = color + "14"; e.currentTarget.style.color = color; }}
                 >
-                  احجز جلسة
+                  نموذج عرض فقط
                 </button>
               </div>
             </Reveal>
@@ -1066,6 +1064,7 @@ function TestimonialsSection() {
 //  CTA SECTION
 // ─────────────────────────────────────────────────────────────
 function CTASection() {
+  const navigate = useNavigate();
   return (
     <section style={{
       padding:    "96px 5%",
@@ -1102,7 +1101,7 @@ function CTASection() {
           ابدأ باستكشاف الأنشطة ومتابعة طفلك مع الأسرة والأخصائي.
         </p>
         <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-          <button style={{
+          <button onClick={() => navigate("/auth")} style={{
             background:   "white",
             color:        C.primary,
             border:       "none",
@@ -1120,7 +1119,7 @@ function CTASection() {
           >
             ابدأ الآن ←
           </button>
-          <button style={{
+          <button onClick={() => navigate("/auth")} style={{
             background:  "rgba(255,255,255,0.15)",
             color:       "white",
             border:      "2px solid rgba(255,255,255,0.5)",
@@ -1149,9 +1148,9 @@ function CTASection() {
 // ─────────────────────────────────────────────────────────────
 function Footer() {
   const columns = [
-    { title: "المنصة",  links: ["الأقسام", "الأخصائيون", "الألعاب", "التقارير"] },
-    { title: "الدعم",   links: ["مركز المساعدة", "تواصل معنا", "سياسة الخصوصية"] },
-    { title: "عن تواصل", links: ["من نحن", "الفريق", "شركاؤنا"] },
+    { title: "استكشف", links: [{ label: "الأقسام", href: "#features" }, { label: "كيف تعمل المنصة؟", href: "#how-it-works" }] },
+    { title: "حسابك", links: [{ label: "تسجيل الدخول", href: "/auth" }, { label: "استعادة كلمة المرور", href: "/auth/forgot-password" }] },
+    { title: "لوحات المتابعة", links: [{ label: "ولي الأمر", href: "/parent" }, { label: "الأخصائي", href: "/tawasl" }] },
   ];
 
   return (
@@ -1206,7 +1205,8 @@ function Footer() {
                 {title}
               </div>
               {links.map(link => (
-                <div key={link} style={{
+                <a key={link.href} href={link.href} style={{
+                  display: "block", color: "inherit", textDecoration: "none",
                   fontSize:     13,
                   marginBottom: 10,
                   cursor:       "pointer",
@@ -1215,8 +1215,8 @@ function Footer() {
                   onMouseEnter={e => e.currentTarget.style.color = "white"}
                   onMouseLeave={e => e.currentTarget.style.color = "rgba(255,255,255,0.7)"}
                 >
-                  {link}
-                </div>
+                  {link.label}
+                </a>
               ))}
             </div>
           ))}
