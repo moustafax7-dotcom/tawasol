@@ -281,10 +281,17 @@ function BookSessionModal({ cases, onClose, onCreate }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!childId || !time) { setErr("محتاجين الطفل والوقت"); return; }
+    if (saving) return;
+    setErr("");
     setSaving(true);
-    const { error } = await onCreate({ childId, date, time, duration: Number(duration), type });
-    setSaving(false);
-    if (error) setErr(error); else onClose();
+    try {
+      const { error } = await onCreate({ childId, date, time, duration: Number(duration), type });
+      if (error) setErr(error); else onClose();
+    } catch {
+      setErr("تعذر تأكيد الحفظ. تحقق من القائمة قبل إعادة المحاولة لتجنب التكرار.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -300,7 +307,7 @@ function BookSessionModal({ cases, onClose, onCreate }) {
         <select value={type} onChange={(e)=>setType(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
           {["ABA","PECS","Speech","متابعة العلاج"].map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        {err && <div style={{ color:T.danger, fontSize:12 }}>{err}</div>}
+        {err && <div role="alert" style={{ color:T.danger, fontSize:12 }}>{err}</div>}
         <div style={{ display:"flex", gap:10 }}>
           <Btn type="button" variant="secondary" style={{ flex:1 }} onClick={onClose}>إلغاء</Btn>
           <Btn type="submit" style={{ flex:1 }} disabled={saving}>{saving ? "جاري الحجز..." : "احجز"}</Btn>
@@ -379,10 +386,17 @@ function NewReportModal({ cases, onClose, onCreate }) {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!childId || !content.trim()) { setErr("محتاجين الطفل والملخص على الأقل"); return; }
+    if (saving) return;
+    setErr("");
     setSaving(true);
-    const { error } = await onCreate({ childId, content: content.trim(), progress, recommendations: recs });
-    setSaving(false);
-    if (error) setErr(error); else onClose();
+    try {
+      const { error } = await onCreate({ childId, content: content.trim(), progress, recommendations: recs });
+      if (error) setErr(error); else onClose();
+    } catch {
+      setErr("تعذر تأكيد الحفظ. تحقق من القائمة قبل إعادة المحاولة لتجنب التكرار.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -398,7 +412,7 @@ function NewReportModal({ cases, onClose, onCreate }) {
           style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
         <textarea placeholder="التوصيات (افصل بينهم بفاصلة ,)" value={recs} onChange={(e)=>setRecs(e.target.value)} rows={3}
           style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit", resize:"vertical" }} />
-        {err && <div style={{ color:T.danger, fontSize:12 }}>{err}</div>}
+        {err && <div role="alert" style={{ color:T.danger, fontSize:12 }}>{err}</div>}
         <div style={{ display:"flex", gap:10 }}>
           <Btn type="button" variant="secondary" style={{ flex:1 }} onClick={onClose}>إلغاء</Btn>
           <Btn type="submit" style={{ flex:1 }} disabled={saving}>{saving ? "جاري الحفظ..." : "حفظ التقرير"}</Btn>
@@ -639,7 +653,7 @@ export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
   const {
     specialist, cases, sessionsToday, reports, loading, error,
-    createSession, updateSessionStatus, createReport,
+    createSession, updateSessionStatus, createReport, refresh,
   } = useTawaslDashboardData();
 
   const pages = {
@@ -654,7 +668,12 @@ export default function SpecialistDashboard() {
       <Layout active={section} onNav={setSection} specialist={specialist}>
         {loading ? (
           <div style={{ padding:60, textAlign:"center", color:T.textMuted, fontFamily:"'Tajawal',sans-serif" }}>
-            {error ? `حصل خطأ: ${error}` : "بنجهّز بياناتك..."}
+            بنجهّز بياناتك...
+          </div>
+        ) : error ? (
+          <div role="alert" dir="rtl" style={{ padding: 32, textAlign: "center" }}>
+            <p>{error}</p>
+            <button type="button" onClick={refresh} style={{ marginTop: 16, padding: "12px 20px" }}>إعادة المحاولة</button>
           </div>
         ) : pages[section]}
       </Layout>

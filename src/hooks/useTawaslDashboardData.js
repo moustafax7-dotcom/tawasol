@@ -1,3 +1,4 @@
+import { saveSpecialistRecord } from "../services/specialistWrites";
 // src/hooks/useTawaslDashboardData.js
 // ============================================================
 // يجيب بيانات داشبورد الأخصائي الحالي (المسجّل دخول) فقط —
@@ -47,6 +48,12 @@ export function useTawaslDashboardData() {
         supabase.from("reports").select("*, children(full_name)").eq("specialist_id", profile.id).order("created_at", { ascending: false }),
       ]);
 
+      if (specRes.error || !specRes.data) {
+        throw new Error("تعذر تحميل ملف الأخصائي. أعد المحاولة، وإذا استمرت المشكلة تواصل مع إدارة المنصة لمراجعة إعداد الحساب.");
+      }
+      if ([linksRes, sessionsRes, reportsRes].some(result => result.error)) {
+        throw new Error("تعذر تحميل الحالات أو الجلسات أو التقارير. تحقق من الاتصال وأعد المحاولة.");
+      }
       setSpecialist({ ...specRes.data, name: profile.Full_name });
 
       const childIds = (linksRes.data || []).map((l) => l.child_id);
@@ -56,11 +63,16 @@ export function useTawaslDashboardData() {
       let lastSessionByChild = {};
 
       if (childIds.length > 0) {
-        const [{ data: tasks }, { data: moods }, { data: allSessions }] = await Promise.all([
+        const activityResults = await Promise.all([
           supabase.from("daily_tasks").select("child_id, done").in("child_id", childIds).eq("task_date", today),
           supabase.from("mood_logs").select("child_id, mood, logged_at").in("child_id", childIds).order("logged_at", { ascending: false }),
           supabase.from("sessions").select("child_id, session_date").in("child_id", childIds).lte("session_date", today).order("session_date", { ascending: false }),
         ]);
+
+        if (activityResults.some(result => result.error)) {
+          throw new Error("تعذر تحميل نشاط الحالات. أعد المحاولة قبل الاعتماد على نسب التقدم.");
+        }
+        const [{ data: tasks }, { data: moods }, { data: allSessions }] = activityResults;
 
         (tasks || []).forEach((t) => {
           progressByChild[t.child_id] = progressByChild[t.child_id] || { done: 0, total: 0 };
@@ -120,13 +132,16 @@ export function useTawaslDashboardData() {
     } finally {
       setLoading(false);
     }
-  }, [profile?.id]);
+  }, [profile]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = setTimeout(() => { load(); }, 0);
+    return () => clearTimeout(timer);
+  }, [load]);
 
   async function createSession({ childId, date, time, duration, type }) {
     if (!profile?.id) return { error: "بيانات المستخدم لسه بتتحمّل" };
-    const { error } = await supabase.from("sessions").insert({
+    const result = await saveSpecialistRecord(supabase, "sessions", {
       specialist_id: profile.id,
       child_id: childId,
       session_date: date,
@@ -135,27 +150,32 @@ export function useTawaslDashboardData() {
       type,
       status: "scheduled",
     });
-    if (!error) load();
-    return { error: error?.message || null };
+    if (!result.error) void load();
+    return result;
   }
 
   async function updateSessionStatus(sessionId, status) {
-    await supabase.from("sessions").update({ status }).eq("id", sessionId);
-    load();
+    try {
+      const { error } = await supabase.from("sessions").update({ status }).eq("id", sessionId);
+      if (error) throw error;
+      await load();
+    } catch {
+      setError("تعذر حفظ حالة الجلسة. أعد تحميل البيانات للتحقق من حالتها قبل المحاولة مجددًا.");
+    }
   }
 
   async function createReport({ childId, content, progress, recommendations }) {
     if (!profile?.id) return { error: "بيانات المستخدم لسه بتتحمّل" };
     const recArray = (recommendations || "").split(",").map((s) => s.trim()).filter(Boolean);
-    const { error } = await supabase.from("reports").insert({
+    const result = await saveSpecialistRecord(supabase, "reports", {
       specialist_id: profile.id,
       child_id: childId,
       report_type: "note",
       content,
       metrics: { progress: Number(progress) || 0, recommendations: recArray },
     });
-    if (!error) load();
-    return { error: error?.message || null };
+    if (!result.error) void load();
+    return result;
   }
 
   return {

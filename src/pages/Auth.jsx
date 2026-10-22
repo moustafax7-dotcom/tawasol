@@ -22,10 +22,7 @@ import {
 } from "../services/authService";
 import styles from "./Auth.module.css";
 
-const DASHBOARD_BY_ROLE = {
-  parent: "/parent",
-  specialist: "/tawasl",
-};
+import { getAuthDestination } from "../services/authPolicy";
 
 export default function Auth() {
   const [mode, setMode] = useState("login"); // "login" | "register"
@@ -66,8 +63,7 @@ export default function Auth() {
 
   function redirectAfterAuth(user) {
     const from = location.state?.from?.pathname;
-    if (!user.role) return navigate("/complete-profile", { replace: true });
-    navigate(from || DASHBOARD_BY_ROLE[user.role] || "/", { replace: true });
+    navigate(getAuthDestination(user.role, from), { replace: true });
   }
 
   async function handleSubmit(e) {

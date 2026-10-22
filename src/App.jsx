@@ -1,11 +1,15 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './routes/ProtectedRoute'
 import Landing from './pages/Landing'
+import ProfileRecovery from './pages/ProfileRecovery'
+import NotFound from './pages/NotFound'
 import Auth from './pages/Auth'
-import ParentDashboard from './pages/ParentDashboard'
-import KidsDashboard from './pages/KidsDashboard'
-import TawaslDashboard from './pages/TawaslDashboard'
+import PasswordRecovery from './pages/PasswordRecovery'
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'))
+const KidsDashboard = lazy(() => import('./pages/KidsDashboard'))
+const TawaslDashboard = lazy(() => import('./pages/TawaslDashboard'))
 
 // ملحوظة: تم حذف مكوّن QuickNav (كان بيدّي دخول مباشر لأي داشبورد
 // من غير أي حماية — أي مستخدم، حتى غير المسجل، كان يقدر يفتح
@@ -16,9 +20,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <Suspense fallback={<div role="status" style={{ padding: 48, textAlign: "center" }}>جاري تحميل الصفحة...</div>}>
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/auth/forgot-password" element={<PasswordRecovery key="forgot" />} />
+          <Route path="/auth/reset-password" element={<PasswordRecovery key="reset" reset />} />
+          <Route path="/complete-profile" element={<ProfileRecovery />} />
+          <Route path="*" element={<NotFound />} />
           <Route
             path="/parent"
             element={
@@ -44,6 +53,7 @@ export default function App() {
             }
           />
         </Routes>
+        </Suspense>
       </AuthProvider>
     </BrowserRouter>
   )

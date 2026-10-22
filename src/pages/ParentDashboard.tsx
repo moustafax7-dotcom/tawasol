@@ -334,9 +334,14 @@ function AddChildForm({ onAdd }: { onAdd: (v: { fullName: string; age: number })
     }
     setSubmitting(true);
     setErr("");
-    const { error } = await onAdd({ fullName: fullName.trim(), age: Number(age) });
-    setSubmitting(false);
-    if (error) setErr(error);
+    try {
+      const { error } = await onAdd({ fullName: fullName.trim(), age: Number(age) });
+      if (error) setErr(error);
+    } catch {
+      setErr("تعذر حفظ بيانات الطفل. حاول مرة أخرى.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -384,7 +389,7 @@ export default function ParentDashboard() {
   const {
     children, selectedChild, selectedChildId, setSelectedChildId, addChild,
     specialist, moodToday, weekMoods, tasksToday, gamesToday, streak, progress,
-    loading, childrenLoading, error,
+    loading, childrenLoading, error, refresh,
   } = useParentDashboardData();
   const navigate = useNavigate();
 
@@ -464,9 +469,10 @@ export default function ParentDashboard() {
                 </div>
               </div>
 
+              {error && <div role="alert" style={{ padding: 16, marginBottom: 16, color: "#9B3030", background: "#FFF0F0", borderRadius: 12 }}>{error} <button onClick={refresh}>إعادة المحاولة</button></div>}
               {loading ? (
                 <div style={{ textAlign: "center", padding: 40, color: T.textMuted }}>بيتحمّل...</div>
-              ) : (
+              ) : !error && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <MoodCard child={selectedChild} moodToday={moodToday} weekMoods={weekMoods} />
                   <SpecialistCard specialist={specialist} progress={progress} />
