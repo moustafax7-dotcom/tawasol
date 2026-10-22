@@ -1,3 +1,4 @@
+import { saveSpecialistRecord } from "../services/specialistWrites";
 // src/hooks/useTawaslDashboardData.js
 // ============================================================
 // يجيب بيانات داشبورد الأخصائي الحالي (المسجّل دخول) فقط —
@@ -140,7 +141,7 @@ export function useTawaslDashboardData() {
 
   async function createSession({ childId, date, time, duration, type }) {
     if (!profile?.id) return { error: "بيانات المستخدم لسه بتتحمّل" };
-    const { error } = await supabase.from("sessions").insert({
+    const result = await saveSpecialistRecord(supabase, "sessions", {
       specialist_id: profile.id,
       child_id: childId,
       session_date: date,
@@ -149,8 +150,8 @@ export function useTawaslDashboardData() {
       type,
       status: "scheduled",
     });
-    if (!error) load();
-    return { error: error?.message || null };
+    if (!result.error) void load();
+    return result;
   }
 
   async function updateSessionStatus(sessionId, status) {
@@ -166,15 +167,15 @@ export function useTawaslDashboardData() {
   async function createReport({ childId, content, progress, recommendations }) {
     if (!profile?.id) return { error: "بيانات المستخدم لسه بتتحمّل" };
     const recArray = (recommendations || "").split(",").map((s) => s.trim()).filter(Boolean);
-    const { error } = await supabase.from("reports").insert({
+    const result = await saveSpecialistRecord(supabase, "reports", {
       specialist_id: profile.id,
       child_id: childId,
       report_type: "note",
       content,
       metrics: { progress: Number(progress) || 0, recommendations: recArray },
     });
-    if (!error) load();
-    return { error: error?.message || null };
+    if (!result.error) void load();
+    return result;
   }
 
   return {
