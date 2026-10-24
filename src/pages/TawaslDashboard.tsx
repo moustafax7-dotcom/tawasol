@@ -1,3 +1,4 @@
+import { localDateInput } from "../utils/sessionValidation.js";
 import { useState } from "react";
 import { specialistTokens as T } from "./theme";
 import { useTawaslDashboardData } from "../hooks/useTawaslDashboardData";
@@ -16,9 +17,9 @@ const statusColors = {
   "جارية":         { bg:T.primaryBg,   color:T.primary },
   "قادمة":         { bg:T.secondaryBg, color:T.secondary },
   "ملغاة":         { bg:"#F0F0F0",     color:T.textMuted },
-  "يحتاج متابعة": { bg:T.dangerBg,    color:T.danger },
-  "مستقر":         { bg:T.successBg,   color:T.success },
-  "ممتاز":         { bg:"#E8F4FD",     color:"#4A90C4" },
+  "مهام أقل من 45٪": { bg:T.dangerBg,    color:T.danger },
+  "مهام من 45٪ إلى 74٪":         { bg:T.successBg,   color:T.success },
+  "مهام 75٪ فأكثر":         { bg:"#E8F4FD",     color:"#4A90C4" },
   "جديد":          { bg:T.secondaryBg, color:T.secondary },
 };
 
@@ -101,7 +102,7 @@ const NAV = [
 
 // ─── Pages ──────────────────────────────────────────────────────────────────
 function OverviewPage({ onNavigate, cases, sessionsToday }) {
-  const urgent = cases.filter(c => c.status === "يحتاج متابعة");
+  const urgent = cases.filter(c => c.status === "مهام أقل من 45٪");
   const avgProgress = cases.length > 0 ? Math.round(cases.reduce((a,c)=>a+c.progressPercent,0)/cases.length) : 0;
   const SBG = { "منتهية":T.border, "جارية":T.primaryBg, "قادمة":T.secondaryBg, "ملغاة":T.border };
   const SC  = { "منتهية":T.textMuted, "جارية":T.primary, "قادمة":T.secondary, "ملغاة":T.textMuted };
@@ -110,12 +111,13 @@ function OverviewPage({ onNavigate, cases, sessionsToday }) {
       <div style={{ marginBottom:28 }}>
         <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
         <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>نظرة عامة</h1>
+        <p style={{ color:T.textMuted, fontSize:13, marginTop:8 }}>النسب تعبّر عن إنجاز مهام اليوم داخل المنصة، وليست تقييمًا طبيًا أو قياسًا لتحسّن الطفل.</p>
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
         <StatCard icon="📋" value={cases.length}        label="الحالات النشطة"   accent={T.primary} />
-        <StatCard icon="📈" value={`${avgProgress}%`}   label="متوسط التقدم"     accent={T.success} />
+        <StatCard icon="📈" value={`${avgProgress}%`}   label="متوسط إنجاز المهام"     accent={T.success} />
         <StatCard icon="📅" value={sessionsToday.length} label="جلسات اليوم"      accent={T.secondary} />
-        <StatCard icon="⚠️" value={urgent.length}        label="تحتاج متابعة"     accent={T.danger} />
+        <StatCard icon="⚠️" value={urgent.length}        label="إنجاز مهام أقل من 45٪"     accent={T.danger} />
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:20, marginBottom:20 }}>
         <Card style={{ padding:"20px" }}>
@@ -130,7 +132,7 @@ function OverviewPage({ onNavigate, cases, sessionsToday }) {
                 <Avatar name={c.childName} size={36} />
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:T.text }}>{c.childName}</div>
-                  <div style={{ fontSize:11, color:T.textMuted }}>تقدم {c.progressPercent}%</div>
+                  <div style={{ fontSize:11, color:T.textMuted }}>إنجاز المهام {c.progressPercent}%</div>
                 </div>
                 <StatusPill label={c.status} />
               </div>
@@ -160,7 +162,7 @@ function OverviewPage({ onNavigate, cases, sessionsToday }) {
       {urgent.length > 0 && (
         <Card style={{ padding:"20px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-            <h2 style={{ fontSize:16, fontWeight:800, color:T.text, margin:0 }}>حالات تحتاج متابعة عاجلة</h2>
+            <h2 style={{ fontSize:16, fontWeight:800, color:T.text, margin:0 }}>حالات إنجاز مهام أقل من 45٪ عاجلة</h2>
             <Btn variant="secondary" size="sm" onClick={() => onNavigate("cases")}>عرض الكل</Btn>
           </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:14 }}>
@@ -187,7 +189,7 @@ function OverviewPage({ onNavigate, cases, sessionsToday }) {
 function CasesPage({ cases }) {
   const [filter, setFilter] = useState("الكل");
   const [view, setView]     = useState("cards");
-  const FILTERS = ["الكل","يحتاج متابعة","مستقر","ممتاز"];
+  const FILTERS = ["الكل","مهام أقل من 45٪","مهام من 45٪ إلى 74٪","مهام 75٪ فأكثر"];
   const filtered = filter === "الكل" ? cases : cases.filter(c => c.status === filter);
   return (
     <div style={{ padding:"28px 28px 40px" }}>
@@ -245,7 +247,7 @@ function CasesPage({ cases }) {
           <table style={{ width:"100%", borderCollapse:"collapse", fontSize:13 }}>
             <thead>
               <tr style={{ borderBottom:`2px solid ${T.border}` }}>
-                {["الطفل","العمر","المزاج","التقدم","آخر جلسة","الحالة"].map(h=>(
+                {["الطفل","العمر","المزاج","إنجاز المهام","آخر جلسة","الحالة"].map(h=>(
                   <th key={h} style={{ padding:"12px 14px", textAlign:"right", color:T.textMuted, fontWeight:700, fontSize:12 }}>{h}</th>
                 ))}
               </tr>
@@ -271,7 +273,7 @@ function CasesPage({ cases }) {
 
 function BookSessionModal({ cases, onClose, onCreate }) {
   const [childId, setChildId] = useState(cases[0]?.id || "");
-  const [date, setDate] = useState(new Date().toISOString().slice(0,10));
+  const [date, setDate] = useState(localDateInput());
   const [time, setTime] = useState("");
   const [duration, setDuration] = useState(45);
   const [type, setType] = useState("ABA");
@@ -298,13 +300,14 @@ function BookSessionModal({ cases, onClose, onCreate }) {
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(20,20,25,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <form onClick={(e)=>e.stopPropagation()} onSubmit={handleSubmit} style={{ background:T.surface, borderRadius:20, padding:24, width:"100%", maxWidth:380, display:"flex", flexDirection:"column", gap:12 }}>
         <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:T.text }}>حجز جلسة جديدة</h3>
-        <select value={childId} onChange={(e)=>setChildId(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
+        <p style={{ margin:0, fontSize:12, color:T.textMuted }}>التوقيت حسب جهازك. المدة بالدقائق. حجز الموعد لا ينشئ مكالمة فيديو.</p>
+        <select aria-label="الطفل" required value={childId} onChange={(e)=>setChildId(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
           {cases.map(c => <option key={c.id} value={c.id}>{c.childName}</option>)}
         </select>
-        <input type="date" value={date} onChange={(e)=>setDate(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
-        <input type="text" placeholder="الوقت (مثال: 10:00 ص)" value={time} onChange={(e)=>setTime(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
-        <input type="number" placeholder="المدة (دقيقة)" value={duration} onChange={(e)=>setDuration(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
-        <select value={type} onChange={(e)=>setType(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
+        <input aria-label="تاريخ الجلسة" type="date" min={localDateInput()} required value={date} onChange={(e)=>setDate(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <input aria-label="وقت الجلسة" type="time" required value={time} onChange={(e)=>setTime(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <input aria-label="المدة بالدقائق" type="number" min="5" max="240" step="1" required placeholder="المدة (دقيقة)" value={duration} onChange={(e)=>setDuration(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }} />
+        <select aria-label="نوع الجلسة" value={type} onChange={(e)=>setType(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
           {["ABA","PECS","Speech","متابعة العلاج"].map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         {err && <div role="alert" style={{ color:T.danger, fontSize:12 }}>{err}</div>}
@@ -317,23 +320,33 @@ function BookSessionModal({ cases, onClose, onCreate }) {
   );
 }
 
-function SessionsPage({ sessionsToday, cases, createSession, updateSessionStatus }) {
+function SessionsPage({ sessionsToday, sessionDate, onDateChange, cases, createSession, updateSessionStatus }) {
   const [filter, setFilter] = useState("الكل");
   const [showModal, setShowModal] = useState(false);
-  const FILTERS = ["الكل","جارية","قادمة","منتهية"];
+  const FILTERS = ["الكل","جارية","قادمة","منتهية","ملغاة"];
+  const [search, setSearch] = useState("");
   const DOT = { "منتهية":T.textLight, "جارية":T.primary, "قادمة":T.secondary, "ملغاة":T.textLight };
-  const filtered = filter === "الكل" ? sessionsToday : sessionsToday.filter(s => s.status === filter);
+  const filtered = sessionsToday.filter(s => (filter === "الكل" || s.status === filter) && s.childName.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()));
   return (
     <div style={{ padding:"28px 28px 40px" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", marginBottom:24 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-end", flexWrap:"wrap", gap:16, marginBottom:24 }}>
         <div>
           <div style={{ fontSize:13, color:T.textMuted, marginBottom:4 }}>{todayLabel()}</div>
           <h1 style={{ fontSize:26, fontWeight:900, color:T.text, margin:0 }}>الجلسات</h1>
         </div>
         <Btn onClick={()=>setShowModal(true)} disabled={cases.length===0}>+ حجز جلسة</Btn>
       </div>
+      <div style={{ display:"flex", flexWrap:"wrap", gap:12, marginBottom:20 }}>
+        <label style={{ display:"grid", gap:6, fontSize:13 }}>تاريخ الجلسات
+          <input type="date" value={sessionDate} onChange={e => { if (e.target.value) onDateChange(e.target.value); }} style={{ padding:10, borderRadius:10, border:`1px solid ${T.border}`, fontFamily:"inherit" }} />
+        </label>
+        <label style={{ display:"grid", gap:6, fontSize:13, flex:"1 1 200px" }}>البحث باسم الطفل
+          <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="اكتب اسم الطفل" style={{ padding:10, borderRadius:10, border:`1px solid ${T.border}`, fontFamily:"inherit" }} />
+        </label>
+        <Btn variant="secondary" onClick={() => onDateChange(localDateInput())}>اليوم</Btn>
+      </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
-        <StatCard icon="📅" value={sessionsToday.length}                                      label="إجمالي اليوم" accent={T.secondary} />
+        <StatCard icon="📅" value={sessionsToday.length}                                      label="جلسات التاريخ المختار" accent={T.secondary} />
         <StatCard icon="🔄" value={sessionsToday.filter(s=>s.status==="جارية").length}   label="جارية الآن"   accent={T.primary} />
         <StatCard icon="⏳" value={sessionsToday.filter(s=>s.status==="قادمة").length}   label="قادمة"        accent={T.warning} />
         <StatCard icon="✅" value={sessionsToday.filter(s=>s.status==="منتهية").length}  label="منتهية"       accent={T.success} />
@@ -349,7 +362,7 @@ function SessionsPage({ sessionsToday, cases, createSession, updateSessionStatus
       <Card style={{ padding:"8px 0" }}>
         {filtered.length === 0 && <div style={{ textAlign:"center", padding:30, color:T.textMuted, fontSize:14 }}>مفيش جلسات في القسم ده</div>}
         {filtered.map((s,i) => (
-          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:16, padding:"16px 20px",
+          <div key={s.id} style={{ display:"flex", alignItems:"center", gap:16, flexWrap:"wrap", padding:"16px 20px",
             borderBottom:i<filtered.length-1?`1px solid ${T.border}`:undefined,
             background:s.status==="جارية"?T.primaryBg+"88":"transparent" }}>
             <div style={{ width:10, height:10, borderRadius:"50%", background:DOT[s.status]??T.textMuted, flexShrink:0 }}/>
@@ -437,8 +450,8 @@ function ReportsPage({ reports, cases, createReport }) {
       </div>
       <div style={{ display:"flex", gap:14, marginBottom:28, flexWrap:"wrap" }}>
         <StatCard icon="📊" value={reports.length} label="إجمالي التقارير" accent={T.primary} />
-        <StatCard icon="📈" value={`${avgProgress}%`} label="متوسط التقدم" accent={T.success} />
-        <StatCard icon="⚠️" value={cases.filter(c=>c.status==="يحتاج متابعة").length} label="تحتاج متابعة" accent={T.danger} />
+        <StatCard icon="📈" value={`${avgProgress}%`} label="متوسط إنجاز المهام" accent={T.success} />
+        <StatCard icon="⚠️" value={cases.filter(c=>c.status==="مهام أقل من 45٪").length} label="إنجاز مهام أقل من 45٪" accent={T.danger} />
       </div>
       {reports.length === 0 && (
         <div style={{ textAlign:"center", padding:40, color:T.textMuted, fontSize:14 }}>لسه مفيش تقارير مكتوبة</div>
@@ -652,14 +665,14 @@ function Layout({ children, active, onNav, specialist }) {
 export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
   const {
-    specialist, cases, sessionsToday, reports, loading, error,
+    specialist, cases, sessionsToday, sessionsForDate, sessionDate, setSessionDate, reports, loading, error,
     createSession, updateSessionStatus, createReport, refresh,
   } = useTawaslDashboardData();
 
   const pages = {
     overview: <OverviewPage onNavigate={setSection} cases={cases} sessionsToday={sessionsToday} />,
     cases:    <CasesPage cases={cases} />,
-    sessions: <SessionsPage sessionsToday={sessionsToday} cases={cases} createSession={createSession} updateSessionStatus={updateSessionStatus} />,
+    sessions: <SessionsPage sessionsToday={sessionsForDate} sessionDate={sessionDate} onDateChange={setSessionDate} cases={cases} createSession={createSession} updateSessionStatus={updateSessionStatus} />,
     reports:  <ReportsPage reports={reports} cases={cases} createReport={createReport} />,
   };
   return (

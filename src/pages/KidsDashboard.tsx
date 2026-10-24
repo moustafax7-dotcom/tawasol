@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { kidsTokens as K } from "./theme";
 import MemoryGame from "./MemoryGame";
 import AnimalSoundsGame from "./AnimalSoundsGame";
@@ -9,6 +9,7 @@ import MusicGame from "./MusicGame";
 import KidsPrayerApp from "./KidsprayerApp";
 import { useKidsDashboardData } from "../hooks/useKidsDashboardData";
 import { supabase } from "../supabaseClient";
+import { saveChildMood } from "../services/childWrites.js";
 
 const MOODS = [
   { id:"happy", emoji:"😄", label:"سعيد",  color:"#FFD93D", bg:"#FFFBEA", border:"#FFD93D" },
@@ -80,25 +81,31 @@ function MoodSection({ childId }: { childId: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
+  const pendingSave = useRef(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleSelect = (id: string) => {
+    if (pendingSave.current) return;
     setSelected(id);
     setSubmitted(false);
+    setSaveError(null);
   };
 
   const chosen = MOODS.find(m => m.id === selected);
 
   async function handleSave() {
-    if (!selected || !childId) return;
+    if (!selected || !childId || pendingSave.current) return;
+    pendingSave.current = true;
     setSaving(true);
-    await supabase.from("mood_logs").insert({
-      child_id: childId,
-      mood: selected,
-      source: "child",
-      logged_at: new Date().toISOString(),
-    });
-    setSaving(false);
-    setSubmitted(true);
+    setSaveError(null);
+    try {
+      const result = await saveChildMood(supabase, { childId, mood: selected });
+      if (result.error) setSaveError(result.error);
+      else setSubmitted(true);
+    } finally {
+      pendingSave.current = false;
+      setSaving(false);
+    }
   }
 
   return (
@@ -108,6 +115,8 @@ function MoodSection({ childId }: { childId: string }) {
         {MOODS.map(m => (
           <button
             key={m.id}
+            disabled={saving}
+            aria-pressed={selected === m.id}
             onClick={() => handleSelect(m.id)}
             style={{
               flex:"1 1 100px", minWidth:90,
@@ -132,6 +141,7 @@ function MoodSection({ childId }: { childId: string }) {
         ))}
       </div>
 
+      {saveError && <p role="alert" style={{ color: "#9B3030", marginTop: 16 }}>{saveError}</p>}
       {selected && !submitted && (
         <div style={{ marginTop:16, display:"flex", alignItems:"center", gap:12 }}>
           <div style={{
@@ -297,7 +307,7 @@ function GamesSection({ onPlayGame }: { onPlayGame: (id: string) => void }) {
 }
 
 // ─── Header ───────────────────────────────────────────────────────────────────
-function Header({ points }: { points: number }) {
+function Header({ points, completedTasks }: { points: number; completedTasks: number }) {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "صباح الخير" : hour < 17 ? "مرحباً" : "مساء الخير";
   return (
@@ -329,9 +339,9 @@ function Header({ points }: { points: number }) {
         {/* Quick stats */}
         <div style={{ display:"flex", gap:10 }}>
           {[
-            { icon:"🎮", label:"ألعاب", value:"4" },
+            { icon:"🎮", label:"ألعاب متاحة", value:String(GAMES.length) },
             { icon:"⭐", label:"نقاطي", value:String(points) },
-            { icon:"🏆", label:"إنجازات", value:"7" },
+            { icon:"🏆", label:"مهام مكتملة", value:String(completedTasks) },
           ].map(({icon,label,value}) => (
             <div key={label} style={{
               flex:1, padding:"10px 8px", borderRadius:14,
@@ -564,11 +574,11 @@ export default function KidsDashboard() {
   const renderContent = () => {
     if (tab === "games")    return <GamesSection onPlayGame={handlePlayGame} />;
     if (tab === "calendar") return <CalendarSection tasksToday={tasksToday} toggleTask={toggleTask} />;
-    if (tab === "mood")     return <MoodSection childId={selectedChildId!} />;
+    if (tab === "mood")     return <MoodSection key={selectedChildId} childId={selectedChildId!} />;
     // home = all sections
     return (
       <>
-        <MoodSection childId={selectedChildId!} />
+        <MoodSection key={selectedChildId} childId={selectedChildId!} />
         <CalendarSection tasksToday={tasksToday} toggleTask={toggleTask} />
         <GamesSection onPlayGame={handlePlayGame} />
       </>
@@ -591,7 +601,7 @@ export default function KidsDashboard() {
         fontFamily:"'Tajawal',sans-serif", direction:"rtl",
         paddingBottom:90,
       }}>
-        <Header points={points} />
+        <Header points={points} completedTasks={tasksToday.filter(task => task.done).length} />
 
         <div style={{ padding:"0 16px", maxWidth:600, margin:"0 auto" }}>
           {error && <div role="alert" style={{ padding: 16, color: "#9B3030", background: "#FFF0F0", borderRadius: 12, marginBottom: 16 }}>{error}</div>}
