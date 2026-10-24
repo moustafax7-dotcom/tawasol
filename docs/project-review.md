@@ -87,3 +87,11 @@ Reloading /auth/forgot-password returned Vercel's 404 NOT_FOUND (not the React
 404). Added SPA fallback rewrites for extensionless paths; static file requests
 remain excluded. Acceptance: direct request/reload of auth and protected routes
 loads React, and unknown app routes use the application's 404. Retest on preview.
+
+## QA update — 2026-10-25
+
+On the existing branch preview (before the latest local child-write changes), a dedicated test parent logged in, created a synthetic child, reloaded successfully, completed a daily task, and confirmed its persisted 14% progress in the parent dashboard. This verifies the happy path only, not registration email delivery or account isolation.
+
+Local follow-up fixes: stable child task ordering; confirmed task writes; guarded reward balance updates with compare-and-set; visible partial game-history failures; mood-save errors and duplicate-click protection; dashboard counts now show available games and completed daily tasks instead of fixed achievements.
+
+Validation: 30 service/policy tests, configured JS/JSX lint, production build and whitespace checks passed. TSX typechecking and browser verification of these latest local changes remain outstanding. Reward and game-history writes are still separate operations; a database transaction with idempotency and server-authoritative reward rules remains necessary. Specialist test account and multi-account RLS tests remain pending. These local changes have not yet been uploaded or merged.
