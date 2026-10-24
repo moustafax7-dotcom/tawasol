@@ -1,4 +1,5 @@
-import { saveSpecialistRecord } from "../services/specialistWrites";
+import { validateSession, localDateInput } from "../utils/sessionValidation.js";
+import { saveSpecialistRecord, saveSessionStatus } from "../services/specialistWrites";
 // src/hooks/useTawaslDashboardData.js
 // ============================================================
 // يجيب بيانات داشبورد الأخصائي الحالي (المسجّل دخول) فقط —
@@ -8,7 +9,7 @@ import { saveSpecialistRecord } from "../services/specialistWrites";
 // ⚠️ ملاحظات:
 // - "نسبة التقدم" لكل حالة بتتحسب من نسبة مهام النهاردة المخلّصة
 //   (نفس منطق ParentDashboard) لحد ما يبقى عندنا مصدر أدق.
-// - "حالة المتابعة" (يحتاج متابعة/مستقر/ممتاز) قيمة محسوبة من
+// - "حالة المتابعة" (مهام أقل من 45٪/مهام من 45٪ إلى 74٪/مهام 75٪ فأكثر) قيمة محسوبة من
 //   نسبة التقدم، مش عمود مخزّن فعلياً.
 // ============================================================
 import { useState, useEffect, useCallback } from "react";
@@ -16,13 +17,13 @@ import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
 function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+  return localDateInput();
 }
 
 function deriveStatus(pct) {
-  if (pct >= 75) return "ممتاز";
-  if (pct >= 45) return "مستقر";
-  return "يحتاج متابعة";
+  if (pct >= 75) return "مهام 75٪ فأكثر";
+  if (pct >= 45) return "مهام من 45٪ إلى 74٪";
+  return "مهام أقل من 45٪";
 }
 
 export function useTawaslDashboardData() {
@@ -30,6 +31,8 @@ export function useTawaslDashboardData() {
   const [specialist, setSpecialist] = useState(null);
   const [cases, setCases] = useState([]);
   const [sessionsToday, setSessionsToday] = useState([]);
+  const [sessionDate, setSessionDate] = useState(localDateInput);
+  const [sessionsForDate, setSessionsForDate] = useState([]);
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -41,17 +44,18 @@ export function useTawaslDashboardData() {
     try {
       const today = todayStr();
 
-      const [specRes, linksRes, sessionsRes, reportsRes] = await Promise.all([
+      const [specRes, linksRes, sessionsRes, reportsRes, selectedSessionsRes] = await Promise.all([
         supabase.from("specialists").select("*").eq("id", profile.id).single(),
         supabase.from("specialist_children").select("child_id, children(*)").eq("specialist_id", profile.id).eq("status", "active"),
         supabase.from("sessions").select("*, children(full_name)").eq("specialist_id", profile.id).eq("session_date", today).order("created_at", { ascending: true }),
         supabase.from("reports").select("*, children(full_name)").eq("specialist_id", profile.id).order("created_at", { ascending: false }),
+        sessionDate === today ? Promise.resolve(null) : supabase.from("sessions").select("*, children(full_name)").eq("specialist_id", profile.id).eq("session_date", sessionDate).order("session_time", { ascending: true }),
       ]);
 
       if (specRes.error || !specRes.data) {
         throw new Error("تعذر تحميل ملف الأخصائي. أعد المحاولة، وإذا استمرت المشكلة تواصل مع إدارة المنصة لمراجعة إعداد الحساب.");
       }
-      if ([linksRes, sessionsRes, reportsRes].some(result => result.error)) {
+      if ([linksRes, sessionsRes, reportsRes, ...(selectedSessionsRes ? [selectedSessionsRes] : [])].some(result => result.error)) {
         throw new Error("تعذر تحميل الحالات أو الجلسات أو التقارير. تحقق من الاتصال وأعد المحاولة.");
       }
       setSpecialist({ ...specRes.data, name: profile.Full_name });
@@ -106,16 +110,14 @@ export function useTawaslDashboardData() {
       });
       setCases(builtCases);
 
-      setSessionsToday(
-        (sessionsRes.data || []).map((s) => ({
-          id: s.id,
-          childName: s.children?.full_name || "—",
-          time: s.session_time,
-          durationMin: s.duration_minutes,
-          status: s.status === "completed" ? "منتهية" : s.status === "in_progress" ? "جارية" : s.status === "cancelled" ? "ملغاة" : "قادمة",
-          type: s.type || "—",
-        }))
-      );
+      const mapSessions = (rows) => (rows || []).map((s) => ({
+        id: s.id, childName: s.children?.full_name || "—", time: s.session_time,
+        durationMin: s.duration_minutes,
+        status: s.status === "completed" ? "منتهية" : s.status === "in_progress" ? "جارية" : s.status === "cancelled" ? "ملغاة" : "قادمة",
+        type: s.type || "—",
+      })).sort((a, b) => String(a.time).localeCompare(String(b.time)));
+      setSessionsToday(mapSessions(sessionsRes.data));
+      setSessionsForDate(mapSessions((selectedSessionsRes || sessionsRes).data));
 
       setReports(
         (reportsRes.data || []).map((r) => ({
@@ -132,7 +134,7 @@ export function useTawaslDashboardData() {
     } finally {
       setLoading(false);
     }
-  }, [profile]);
+  }, [profile, sessionDate]);
 
   useEffect(() => {
     const timer = setTimeout(() => { load(); }, 0);
@@ -141,6 +143,8 @@ export function useTawaslDashboardData() {
 
   async function createSession({ childId, date, time, duration, type }) {
     if (!profile?.id) return { error: "بيانات المستخدم لسه بتتحمّل" };
+    const validationError = validateSession({ childId, date, time, duration, type });
+    if (validationError) return { error: validationError };
     const result = await saveSpecialistRecord(supabase, "sessions", {
       specialist_id: profile.id,
       child_id: childId,
@@ -150,18 +154,17 @@ export function useTawaslDashboardData() {
       type,
       status: "scheduled",
     });
-    if (!result.error) void load();
+    if (!result.error) {
+      if (date !== sessionDate) setSessionDate(date);
+      else void load();
+    }
     return result;
   }
 
   async function updateSessionStatus(sessionId, status) {
-    try {
-      const { error } = await supabase.from("sessions").update({ status }).eq("id", sessionId);
-      if (error) throw error;
-      await load();
-    } catch {
-      setError("تعذر حفظ حالة الجلسة. أعد تحميل البيانات للتحقق من حالتها قبل المحاولة مجددًا.");
-    }
+    const result = await saveSessionStatus(supabase, { sessionId, specialistId: profile?.id, status });
+    if (result.error) setError(result.error);
+    else await load();
   }
 
   async function createReport({ childId, content, progress, recommendations }) {
@@ -182,6 +185,9 @@ export function useTawaslDashboardData() {
     specialist,
     cases,
     sessionsToday,
+    sessionsForDate,
+    sessionDate,
+    setSessionDate,
     reports,
     loading,
     error,
