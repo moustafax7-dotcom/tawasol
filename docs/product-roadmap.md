@@ -20,8 +20,8 @@ Help families coordinate child activities and follow-up with qualified professio
 - React frontend and Supabase remain the existing stack.
 - Authentication, task/mood tracking and basic specialist sessions/reports exist, but are not fully verified.
 - Test parent login, synthetic child creation and daily-task persistence were verified on the existing preview.
-- Latest local fixes confirm writes and show real counts; automated checks are not substitutes for browser or RLS tests.
-- Booking validation and scoped session state confirmation are implemented locally in this delivery.
+- Uploaded fixes confirm writes and show real counts; automated checks are not substitutes for browser or RLS tests.
+- Booking validation and scoped session state confirmation are implemented and uploaded to PR #3.
 - Video, payments, professional verification, consent workflow and concurrency-safe booking are NOT implemented.
 
 ## Proposed architecture
@@ -36,3 +36,6 @@ Begin with a small cohort and qualified professionals offering a clearly describ
 
 ## Implementation discipline
 Each feature moves through: proposed → schema/design checked → implemented → automated checks → browser journey → permission/error tests → pilot ready. Never mark a feature done because its button or screen exists. Do not merge the current branch into production until critical account and data-isolation checks pass.
+
+## Operations increment
+The read-only `/operations` dashboard and membership-gated aggregate SQL migration are implemented. The migration is not applied and staff access is not granted; this feature is not activated. See `operations-dashboard.md`. Latest local validation: 54 unit tests, JS/JSX lint and production build pass.
