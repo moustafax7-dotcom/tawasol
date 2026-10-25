@@ -38,4 +38,4 @@ Begin with a small cohort and qualified professionals offering a clearly describ
 Each feature moves through: proposed → schema/design checked → implemented → automated checks → browser journey → permission/error tests → pilot ready. Never mark a feature done because its button or screen exists. Do not merge the current branch into production until critical account and data-isolation checks pass.
 
 ## Operations increment
-The read-only `/operations` dashboard and membership-gated aggregate SQL migration are implemented. The migration is not applied and staff access is not granted; this feature is not activated. See `operations-dashboard.md`. Latest local validation: 54 unit tests, JS/JSX lint and production build pass.
+The read-only `/operations` dashboard and membership-gated aggregate SQL migration are implemented. The migration is now applied to the hosted project and basic database denial checks pass. Staff access has not been granted; the authenticated staff journey remains unverified. See `operations-dashboard.md`. Latest local validation: 54 unit tests, JS/JSX lint and production build pass.

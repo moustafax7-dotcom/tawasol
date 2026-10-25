@@ -4,7 +4,7 @@ The `/operations` route provides a responsive Arabic, read-only aggregate dashbo
 
 ## Activation status
 
-The versioned migration is prepared, **not applied to the hosted Supabase project**. Until deployed, the dashboard shows an honest setup message. No user has been granted administrative access in this batch. Profile roles and signup metadata do not confer operations access.
+The migration was applied manually through the hosted SQL Editor on 2026-10-25 after checking live column definitions. No migration-history entry was added. No user has been granted administrative access in this batch. Profile roles and signup metadata do not confer operations access.
 
 ## Deployment procedure
 
@@ -19,3 +19,10 @@ The versioned migration is prepared, **not applied to the hosted Supabase projec
 This does not grant clinical-record access, approve specialists, manage appointments, issue refunds, assign staff or provide audit logging. No blanket admin policy was added to child or report tables. Add each privileged operation with its own authorization, audit and acceptance tests. Count queries span current records across all dates; specialist account count is not credential verification. Session status is not proof of attendance. Optimize query/index costs against actual production volumes before scaling.
 
 Unit tests cover RPC response handling only; they do not prove database permissions.
+
+## Hosted verification — 2026-10-25
+- Live columns for profiles, specialists, children and sessions matched the aggregate query.
+- Migration execution returned success.
+- Catalog checks: RLS enabled; membership count zero; authenticated SELECT/INSERT on membership denied; anon EXECUTE on overview denied.
+- Calling the function as authenticated without JWT identity returned SQLSTATE 42501 (Operations access required). This checks the no-identity guard, not a complete signed-in cross-account test.
+- Staff success path, revoked-member path and browser session tests still pending. No clinical records changed. No staging project was available; staging validation was not performed.
