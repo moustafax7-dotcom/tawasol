@@ -7,6 +7,7 @@ import ProfileRecovery from './pages/ProfileRecovery'
 import NotFound from './pages/NotFound'
 import Auth from './pages/Auth'
 import PasswordRecovery from './pages/PasswordRecovery'
+const OperationsDashboard = lazy(() => import('./pages/OperationsDashboard'))
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard'))
 const KidsDashboard = lazy(() => import('./pages/KidsDashboard'))
 const TawaslDashboard = lazy(() => import('./pages/TawaslDashboard'))
@@ -23,6 +24,7 @@ export default function App() {
         <Suspense fallback={<div role="status" style={{ padding: 48, textAlign: "center" }}>جاري تحميل الصفحة...</div>}>
         <Routes>
           <Route path="/" element={<Landing />} />
+          <Route path="/operations" element={<OperationsDashboard />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/forgot-password" element={<PasswordRecovery key="forgot" />} />
           <Route path="/auth/reset-password" element={<PasswordRecovery key="reset" reset />} />
