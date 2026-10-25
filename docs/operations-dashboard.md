@@ -4,7 +4,7 @@ The `/operations` route provides a responsive Arabic, read-only aggregate dashbo
 
 ## Activation status
 
-The migration was applied manually through the hosted SQL Editor on 2026-10-25 after checking live column definitions. No migration-history entry was added. No user has been granted administrative access in this batch. Profile roles and signup metadata do not confer operations access.
+The migration was applied manually through the hosted SQL Editor on 2026-10-25 after checking live column definitions. No migration-history entry was added. The owner-approved existing account has now been granted read-only operations membership. Profile roles and signup metadata do not confer operations access.
 
 ## Deployment procedure
 
@@ -25,4 +25,7 @@ Unit tests cover RPC response handling only; they do not prove database permissi
 - Migration execution returned success.
 - Catalog checks: RLS enabled; membership count zero; authenticated SELECT/INSERT on membership denied; anon EXECUTE on overview denied.
 - Calling the function as authenticated without JWT identity returned SQLSTATE 42501 (Operations access required). This checks the no-identity guard, not a complete signed-in cross-account test.
-- Staff success path, revoked-member path and browser session tests still pending. No clinical records changed. No staging project was available; staging validation was not performed.
+- SQL role/JWT-context simulation now passes for the approved member and rejects the nonmember QA parent with 42501. Real browser authentication and revoked-member tests remain pending. No clinical records changed. No staging project was available; staging validation was not performed.
+
+## Activation follow-up
+Owner-approved membership was inserted successfully. In a rollback-only SQL transaction, the authenticated role with the member identity returned aggregate counts; the QA parent identity was denied. No credentials or clinical records were used in test artifacts. The login link preserves /operations as its return path, with an allowlisted redirect policy. Validation: 55 unit tests, JS/JSX lint and build pass.
