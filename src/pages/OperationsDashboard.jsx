@@ -61,7 +61,7 @@ export default function OperationsDashboard() {
   return <main className="operations" dir="rtl">
     <header><div><span className="operations-brand">تواصل · إدارة الشركة</span><h1>متابعة التشغيل</h1></div><Link to="/">الصفحة الرئيسية</Link></header>
     {loading ? <p role="status">جاري تحميل حسابك…</p> : error ? <p role="alert">تعذر التحقق من حسابك. <Link to="/complete-profile">إعادة المحاولة</Link></p> : !user ?
-      <section className="operations-notice"><h2>سجّل دخولك للمتابعة</h2><p>الوصول متاح فقط للحسابات المصرّح لها بإدارة التشغيل.</p><Link to="/auth">تسجيل الدخول</Link></section> :
+      <section className="operations-notice"><h2>سجّل دخولك للمتابعة</h2><p>الوصول متاح فقط للحسابات المصرّح لها بإدارة التشغيل.</p><Link to="/auth" state={{ from: { pathname: "/operations" } }}>تسجيل الدخول</Link></section> :
       <OperationsContent key={user.id} userId={user.id} />}
   </main>;
 }
