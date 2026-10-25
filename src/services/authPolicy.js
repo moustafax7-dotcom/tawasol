@@ -3,7 +3,8 @@ export const DASHBOARD_BY_ROLE = Object.freeze(Object.assign(Object.create(null)
 export function getAuthDestination(role, from) {
   const home = DASHBOARD_BY_ROLE[role];
   if (!home) return '/complete-profile';
-  const allowed = role === 'parent' ? ['/parent', '/kids'] : ['/tawasl'];
+  // Operations data is authorized separately by the membership-gated RPC.
+  const allowed = role === 'parent' ? ['/parent', '/kids', '/operations'] : ['/tawasl', '/operations'];
   return allowed.includes(from) ? from : home;
 }
 
