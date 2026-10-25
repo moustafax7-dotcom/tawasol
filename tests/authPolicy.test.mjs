@@ -18,3 +18,11 @@ test('email confirmation errors retain actionable Arabic feedback', () => {
   assert.equal(normalizeAuthError({ message: 'Invalid login credentials' }).code, 'invalid_credentials');
   assert.equal(normalizeAuthError({ message: 'Email not confirmed' }).code, 'email_not_confirmed');
 });
+
+test('operations login returns to the membership-gated screen without accepting arbitrary paths', () => {
+  for (const role of ['parent', 'specialist']) {
+    assert.equal(getAuthDestination(role, '/operations'), '/operations');
+    assert.notEqual(getAuthDestination(role, '//attacker.example/operations'), '//attacker.example/operations');
+  }
+  assert.equal(getAuthDestination('admin', '/operations'), '/complete-profile');
+});
