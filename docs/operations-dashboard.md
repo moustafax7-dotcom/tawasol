@@ -12,7 +12,7 @@ The migration was applied manually through the hosted SQL Editor on 2026-10-25 a
 2. Apply `supabase/migrations/202610250001_operations_overview.sql` using a trusted database operator. Membership has RLS enabled, no client policies and no client table grants. The RPC uses a fixed empty search path and fully qualified relations.
 3. Identify an existing authorized staff user by verified auth UUID. A trusted database operator can insert that UUID and the granting operator UUID into `public.operations_members`. Do not use signup metadata or put a service key in the frontend.
 4. Verify anon cannot execute the RPC; authenticated parent and specialist without membership get `42501`; attempts to read or insert membership from the browser fail; a designated staff member receives aggregate counts only. Revoke membership and verify subsequent RPC requests fail. Previously displayed aggregate values are not remotely erased.
-5. Compare counts with controlled fixtures. Test loading, failure, refresh, narrow/mobile layout and account switching in the browser. These server/browser checks have not yet been performed.
+5. Compare counts with controlled fixtures. Test loading, failure, refresh, narrow/mobile layout and account switching in the browser. See the dated verification records below for completed checks and remaining gaps.
 
 ## Boundaries
 
@@ -29,3 +29,11 @@ Unit tests cover RPC response handling only; they do not prove database permissi
 
 ## Activation follow-up
 Owner-approved membership was inserted successfully. In a rollback-only SQL transaction, the authenticated role with the member identity returned aggregate counts; the QA parent identity was denied. No credentials or clinical records were used in test artifacts. The login link preserves /operations as its return path, with an allowlisted redirect policy. Validation: 55 unit tests, JS/JSX lint and build pass.
+
+## Account identity and logout — 2026-10-26
+
+The operations page now verifies the current account with Supabase Auth `getUser`, displays only email and an expandable user ID, and provides local-device logout. Identity mismatches and verification errors do not display a verified identity. No session credentials are exposed by this UI. Logout errors remain visible; successful logout reloads the signed-out operations route to discard rendered state. Database membership and profile roles were not modified.
+
+Validation: 59 unit tests, configured JS/JSX lint, production build and diff check passed. Four new service tests cover identity projection, account mismatch, auth/network failures and local-device logout. They do not replace interaction or RLS tests. The code and tests were uploaded to the review branch through the authenticated GitHub UI and fetched back with identical file contents.
+
+Browser verification confirmed that a synthetic nonmember was denied operations access and could log out successfully. The signed-out screen no longer displayed account details. A second nonmember sign-in was also denied. Account identifiers and credentials are intentionally excluded from this public record. The owner account has NOT yet been verified in the application; real aggregate counts, authorized refresh/reload and clearing previously displayed owner counts after account switching remain pending. No permission expansion was used to address denial.
