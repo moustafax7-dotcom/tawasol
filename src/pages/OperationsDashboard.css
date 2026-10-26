@@ -14,3 +14,6 @@
 .operations-metrics strong { font-size: 36px; font-variant-numeric: tabular-nums; }
 .operations-notice { margin-top: 24px; background: #fff; border: 1px solid #d4e1e3; border-inline-start: 4px solid #146474; border-radius: 12px; padding: 24px; line-height: 1.9; max-width: 900px; }
 .operations-updated { color: #42666d; font-size: 14px; }
+.operations bdi { overflow-wrap: anywhere; }
+.operations details { margin-block: 12px; }
+.operations summary { cursor: pointer; }
