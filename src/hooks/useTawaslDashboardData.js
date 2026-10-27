@@ -12,7 +12,7 @@ import { saveSpecialistRecord, saveSessionStatus } from "../services/specialistW
 // - "حالة المتابعة" (مهام أقل من 45٪/مهام من 45٪ إلى 74٪/مهام 75٪ فأكثر) قيمة محسوبة من
 //   نسبة التقدم، مش عمود مخزّن فعلياً.
 // ============================================================
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthContext";
 
@@ -28,6 +28,7 @@ function deriveStatus(pct) {
 
 export function useTawaslDashboardData() {
   const { profile } = useAuth();
+  const pendingTransitions = useRef(new Set());
   const [specialist, setSpecialist] = useState(null);
   const [cases, setCases] = useState([]);
   const [sessionsToday, setSessionsToday] = useState([]);
@@ -162,9 +163,15 @@ export function useTawaslDashboardData() {
   }
 
   async function updateSessionStatus(sessionId, status) {
-    const result = await saveSessionStatus(supabase, { sessionId, specialistId: profile?.id, status });
-    if (result.error) setError(result.error);
-    else await load();
+    if (pendingTransitions.current.has(sessionId)) return { error: "جاري تحديث الجلسة بالفعل." };
+    pendingTransitions.current.add(sessionId);
+    try {
+      const result = await saveSessionStatus(supabase, { sessionId, specialistId: profile?.id, status });
+      if (!result.error) await load();
+      return result;
+    } finally {
+      pendingTransitions.current.delete(sessionId);
+    }
   }
 
   async function createReport({ childId, content, progress, recommendations }) {
