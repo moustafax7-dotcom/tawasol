@@ -1,3 +1,4 @@
+import SessionActions from '../components/SessionActions';
 import { localDateInput } from "../utils/sessionValidation.js";
 import { useState } from "react";
 import { specialistTokens as T } from "./theme";
@@ -373,11 +374,7 @@ function SessionsPage({ sessionsToday, sessionDate, onDateChange, cases, createS
             </div>
             <div style={{ fontSize:12, color:T.textMuted, background:T.surfaceAlt, padding:"4px 10px", borderRadius:8 }}>{s.durationMin} دقيقة</div>
             <StatusPill label={s.status} />
-            <div style={{ display:"flex", gap:8 }}>
-              {s.status==="قادمة" && <Btn variant="ghost" size="sm" onClick={()=>updateSessionStatus(s.id,"cancelled")}>إلغاء</Btn>}
-              {s.status==="قادمة" && <Btn variant="primary" size="sm" onClick={()=>updateSessionStatus(s.id,"in_progress")}>بدء</Btn>}
-              {s.status==="جارية" && <Btn variant="primary" size="sm" onClick={()=>updateSessionStatus(s.id,"completed")}>إنهاء</Btn>}
-            </div>
+            <SessionActions session={s} onUpdate={updateSessionStatus} theme={T} />
           </div>
         ))}
       </Card>
