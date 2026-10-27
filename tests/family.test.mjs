@@ -8,7 +8,7 @@ function database(responses) {
     calls.push(['from', table]);
     const response = responses.shift();
     const query = {};
-    for (const method of ['select', 'insert', 'eq', 'order', 'range']) {
+    for (const method of ['select', 'insert', 'eq', 'gte', 'lte', 'order', 'range']) {
       query[method] = (...args) => { calls.push([method, ...args]); return query; };
     }
     query.single = query.maybeSingle = async () => response;
@@ -80,4 +80,30 @@ test('invalid appointment requests never hit the database', async () => {
     assert.equal((await loadChildAppointments(db, options)).status, 'error');
   }
   assert.equal(db.calls.length, 0);
+});
+
+
+test('appointment filters apply to the server query before bounded pagination', async () => {
+  const db = database([{ data: { id: 'child-1' } }, { data: [] }]);
+  const result = await loadChildAppointments(db, { parentId: 'p', childId: 'child-1', status: 'scheduled', from: '2026-10-01', to: '2026-10-31', sort: 'oldest', page: 1 });
+  assert.equal(result.status, 'ready');
+  for (const expected of [['eq', 'status', 'scheduled'], ['gte', 'session_date', '2026-10-01'], ['lte', 'session_date', '2026-10-31'], ['order', 'session_date', { ascending: true }], ['range', 20, 40]]) {
+    assert.ok(db.calls.some(call => JSON.stringify(call) === JSON.stringify(expected)));
+  }
+  assert.ok(db.calls.findIndex(call => call[0] === 'gte') < db.calls.findIndex(call => call[0] === 'range'));
+});
+
+test('invalid status, date ranges and sort never query the database', async () => {
+  for (const filters of [{ status: 'unknown' }, { status: '__proto__' }, { from: '2026-02-30' }, { to: 'bad' }, { from: '2026-11-01', to: '2026-10-01' }, { sort: 'unknown' }]) {
+    const db = database([]);
+    assert.equal((await loadChildAppointments(db, { parentId: 'p', childId: 'c', ...filters })).status, 'error');
+    assert.deepEqual(db.calls, []);
+  }
+});
+
+test('single-sided and inclusive same-day date filters are supported', async () => {
+  for (const filters of [{ from: '2028-02-29' }, { to: '2026-10-27' }, { from: '2026-10-27', to: '2026-10-27' }]) {
+    const db = database([{ data: { id: 'c' } }, { data: [] }]);
+    assert.equal((await loadChildAppointments(db, { parentId: 'p', childId: 'c', ...filters })).status, 'ready');
+  }
 });
