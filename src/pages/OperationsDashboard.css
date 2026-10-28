@@ -1,0 +1,19 @@
+.operations { min-height: 100vh; background: #f3f7f8; color: #163a43; padding: clamp(20px, 4vw, 64px); font-family: inherit; }
+.operations header, .operations-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 20px; flex-wrap: wrap; }
+.operations header { border-bottom: 1px solid #cbdcde; padding-bottom: 24px; }
+.operations h1 { margin: 10px 0 0; font-size: clamp(28px, 4vw, 42px); }
+.operations-brand { color: #42666d; font-weight: 600; }
+.operations a { color: #146474; text-underline-offset: 5px; }
+.operations-toolbar { margin: 24px 0; }
+.operations button { background: #146474; color: white; border: 0; border-radius: 10px; padding: 12px 22px; font: inherit; cursor: pointer; min-height: 44px; }
+.operations button:disabled { opacity: .65; cursor: wait; }
+.operations :focus-visible { outline: 3px solid #a65a00; outline-offset: 4px; }
+.operations-metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 18px; }
+.operations-metrics article { background: white; border: 1px solid #d4e1e3; border-radius: 16px; padding: 24px; }
+.operations h2 { font-size: 18px; margin: 0 0 16px; line-height: 1.7; }
+.operations-metrics strong { font-size: 36px; font-variant-numeric: tabular-nums; }
+.operations-notice { margin-top: 24px; background: #fff; border: 1px solid #d4e1e3; border-inline-start: 4px solid #146474; border-radius: 12px; padding: 24px; line-height: 1.9; max-width: 900px; }
+.operations-updated { color: #42666d; font-size: 14px; }
+.operations bdi { overflow-wrap: anywhere; }
+.operations details { margin-block: 12px; }
+.operations summary { cursor: pointer; }

@@ -10,21 +10,12 @@
 // ============================================================
 import { supabase } from "../supabaseClient";
 
-const ERROR_MESSAGES = {
-  "invalid_credentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة.",
-  "user_already_exists": "هذا البريد الإلكتروني مستخدم بالفعل.",
-  "email_not_confirmed": "برجاء تأكيد بريدك الإلكتروني أولاً.",
-  "weak_password": "كلمة المرور ضعيفة جداً (6 أحرف على الأقل).",
-  "invalid_email": "صيغة البريد الإلكتروني غير صحيحة.",
-  default: "حدث خطأ غير متوقع، برجاء المحاولة مرة أخرى.",
-};
-
-export function getAuthErrorMessage(code) {
-  return ERROR_MESSAGES[code] || ERROR_MESSAGES.default;
-}
+import { normalizeAuthError } from "./authPolicy";
+export { getAuthErrorMessage } from "./authPolicy";
 
 async function fetchProfile(userId) {
-  const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle();
+  if (error) throw Object.assign(new Error("Profile lookup failed"), { code: "profile_unavailable" });
   return data || null;
 }
 
@@ -32,7 +23,7 @@ async function fetchProfile(userId) {
 // بيرجّع شكل موحّد: { id, email, role, name }
 export async function loginWithEmail(email, password) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw { code: error.message.includes("Invalid") ? "invalid_credentials" : "default" };
+  if (error) throw normalizeAuthError(error);
 
   const profile = await fetchProfile(data.user.id);
   return {
@@ -64,14 +55,7 @@ export async function registerUser({ name, email, password, role, extra = {} }) 
     },
   });
 
-  if (error) {
-    const code = error.message.includes("already registered")
-      ? "user_already_exists"
-      : error.message.includes("Password")
-      ? "weak_password"
-      : "default";
-    throw { code };
-  }
+  if (error) throw normalizeAuthError(error);
 
   return {
     id: data.user.id,

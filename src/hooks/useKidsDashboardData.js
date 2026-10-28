@@ -8,9 +8,10 @@
 // بقاعدة البيانات. أيام الأسبوع التانية (قبل/بعد النهاردة) هتفضل
 // عرض محلي بسيط لحد ما نوسّع الميزة دي — علّمتها TODO تحت.
 // ============================================================
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "../supabaseClient";
 import { useAuth } from "../context/AuthContext";
+import { saveChildTask, saveGameReward } from "../services/childWrites.js";
 import { useNotifications } from "./useNotifications";
 
 // المهام الافتراضية لأي يوم جديد — نفس النص المصحح من طلبك
@@ -43,10 +44,17 @@ function todayStr() {
 
 export function useKidsDashboardData() {
   const { profile } = useAuth();
+  const pendingTasks = useRef(new Set());
+  const pendingRewards = useRef(new Set());
+  const currentChild = useRef(null);
   const { notifySelf } = useNotifications();
   const [children, setChildren] = useState([]);
   const [childrenLoading, setChildrenLoading] = useState(true);
-  const [selectedChildId, setSelectedChildId] = useState(null);
+  const [selectedChildId, updateSelectedChildId] = useState(null);
+  function setSelectedChildId(id) {
+    currentChild.current = id;
+    updateSelectedChildId(id);
+  }
 
   const [tasksToday, setTasksToday] = useState([]);
   const [points, setPoints] = useState(0);
@@ -94,12 +102,13 @@ export function useKidsDashboardData() {
     try {
       const today = todayStr();
 
-      let { data: tasks } = await supabase
+      let { data: tasks, error: tasksError } = await supabase
         .from("daily_tasks")
         .select("*")
         .eq("child_id", childId)
         .eq("task_date", today);
 
+      if (tasksError) throw new Error("تعذر تحميل المهام. حاول مرة أخرى.");
       if (!tasks || tasks.length === 0) {
         const rows = DEFAULT_TASKS.map((t) => ({
           child_id: childId,
@@ -116,21 +125,27 @@ export function useKidsDashboardData() {
         if (insertErr) throw insertErr;
         tasks = inserted;
       }
-      setTasksToday(tasks || []);
+      setTasksToday([...(tasks || [])].sort((a, b) => {
+        const order = DEFAULT_TASKS.map((task) => task.task_key);
+        const rank = (key) => order.includes(key) ? order.indexOf(key) : order.length;
+        return rank(a.task_key) - rank(b.task_key) || String(a.id).localeCompare(String(b.id));
+      }));
 
       // النقاط (rewards) — أنشئ صف لو مش موجود
-      let { data: reward } = await supabase
+      let { data: reward, error: rewardError } = await supabase
         .from("rewards")
         .select("*")
         .eq("child_id", childId)
         .maybeSingle();
 
+      if (rewardError) throw new Error("تعذر تحميل النقاط.");
       if (!reward) {
-        const { data: newReward } = await supabase
+        const { data: newReward, error: newRewardError } = await supabase
           .from("rewards")
           .insert({ child_id: childId, coins: 0 })
           .select()
           .single();
+        if (newRewardError) throw new Error("تعذر تجهيز سجل النقاط.");
         reward = newReward;
       }
       setPoints(reward?.coins ?? 0);
@@ -142,7 +157,9 @@ export function useKidsDashboardData() {
   }, []);
 
   useEffect(() => {
-    if (selectedChildId) loadChildData(selectedChildId);
+    if (!selectedChildId) return;
+    const timer = setTimeout(() => loadChildData(selectedChildId), 0);
+    return () => clearTimeout(timer);
   }, [selectedChildId, loadChildData]);
 
   // تبديل حالة مهمة (خلصت / لسه)
@@ -151,16 +168,19 @@ export function useKidsDashboardData() {
     if (!task) return;
     const newDone = !task.done;
 
-    // تحديث فوري في الواجهة (Optimistic)
-    const updatedTasks = tasksToday.map((t) => (t.id === taskId ? { ...t, done: newDone } : t));
-    setTasksToday(updatedTasks);
-
-    const { error } = await supabase.from("daily_tasks").update({ done: newDone }).eq("id", taskId);
-    if (error) {
-      // رجّع الحالة القديمة لو فشل التحديث
-      setTasksToday((prev) => prev.map((t) => (t.id === taskId ? { ...t, done: !newDone } : t)));
+    if (!selectedChildId || pendingTasks.current.has(taskId)) return;
+    const childId = selectedChildId;
+    pendingTasks.current.add(taskId);
+    setError(null);
+    const result = await saveChildTask(supabase, { taskId, childId, done: newDone });
+    pendingTasks.current.delete(taskId);
+    if (currentChild.current !== childId) return;
+    if (result.error) {
+      setError(result.error);
       return;
     }
+    const updatedTasks = tasksToday.map((t) => (t.id === taskId ? { ...t, done: newDone } : t));
+    setTasksToday((previous) => previous.map((t) => t.id === taskId ? { ...t, done: newDone } : t));
 
     // لو دي آخر مهمة خلّصت كل المهام، ابعت إشعار لولي الأمر
     const allDone = updatedTasks.length > 0 && updatedTasks.every((t) => t.done);
@@ -175,24 +195,20 @@ export function useKidsDashboardData() {
 
   // إضافة نقاط بعد لعبة + تسجيل الجلسة في game_sessions
   async function addGameReward({ localGameId, score, level, durationSeconds = 0, coinsEarned }) {
-    if (!selectedChildId) return;
-
-    // تحديث النقاط محلياً فوراً + في قاعدة البيانات
-    const newTotal = points + coinsEarned;
-    setPoints(newTotal);
-    await supabase.from("rewards").update({ coins: newTotal, updated_at: new Date().toISOString() }).eq("child_id", selectedChildId);
-
-    // تسجيل جلسة اللعب (لو لقينا الـ game الحقيقي في الخريطة)
-    const realGameId = gamesMap[GAME_KEY_MAP[localGameId]];
-    if (realGameId) {
-      await supabase.from("game_sessions").insert({
-        child_id: selectedChildId,
-        game_id: realGameId,
-        score,
-        duration_seconds: durationSeconds,
-        played_at: new Date().toISOString(),
-        raw_data: { level },
+    if (!selectedChildId || loading || pendingRewards.current.has(selectedChildId)) return;
+    const childId = selectedChildId;
+    pendingRewards.current.add(childId);
+    setError(null);
+    try {
+      const result = await saveGameReward(supabase, {
+        childId, gameId: gamesMap[GAME_KEY_MAP[localGameId]], coins: points,
+        earned: coinsEarned, score, level, durationSeconds,
       });
+      if (currentChild.current !== childId) return;
+      if (result.coins !== undefined) setPoints(result.coins);
+      if (result.error) setError(result.error);
+    } finally {
+      pendingRewards.current.delete(childId);
     }
   }
 

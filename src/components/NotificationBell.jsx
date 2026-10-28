@@ -23,9 +23,10 @@ function timeAgo(dateStr) {
 }
 
 export default function NotificationBell({ color = "#2C6E8A" }) {
-  const { items, unreadCount, markAsRead, markAllRead } = useNotifications();
+  const { items, unreadCount, markAsRead, markAllRead, loading, error, refresh } = useNotifications();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  const toggleRef = useRef(null);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -36,10 +37,13 @@ export default function NotificationBell({ color = "#2C6E8A" }) {
   }, []);
 
   return (
-    <div ref={ref} style={{ position: "relative", fontFamily: "inherit" }}>
+    <div ref={ref} onKeyDown={(event) => { if (event.key === "Escape") { setOpen(false); toggleRef.current?.focus(); } }} style={{ position: "relative", fontFamily: "inherit" }}>
       <button
+        ref={toggleRef}
         onClick={() => setOpen((o) => !o)}
         aria-label="الإشعارات"
+        aria-expanded={open}
+        onKeyDown={(event) => { if (event.key === "Escape") setOpen(false); }}
         style={{
           position: "relative", width: 40, height: 40, borderRadius: "50%",
           border: "none", background: "rgba(0,0,0,0.05)", cursor: "pointer",
@@ -59,7 +63,7 @@ export default function NotificationBell({ color = "#2C6E8A" }) {
 
       {open && (
         <div style={{
-          position: "absolute", top: 48, left: 0, width: 320, maxHeight: 400,
+          position: "absolute", top: 48, left: 0, width: "min(320px, calc(100vw - 32px))", maxHeight: 400,
           overflowY: "auto", background: "#fff", borderRadius: 16,
           boxShadow: "0 12px 32px rgba(0,0,0,0.15)", border: "1px solid #EAE6DE",
           zIndex: 200, direction: "rtl",
@@ -73,7 +77,7 @@ export default function NotificationBell({ color = "#2C6E8A" }) {
             )}
           </div>
 
-          {items.length === 0 ? (
+          {error ? <div role="alert" style={{ padding: 16, color: "#9B3030" }}>{error} <button onClick={refresh}>إعادة المحاولة</button></div> : loading ? <div role="status" style={{ padding: 16 }}>جاري التحميل...</div> : items.length === 0 ? (
             <div style={{ padding: "30px 16px", textAlign: "center", color: "#8890A6", fontSize: 13 }}>
               مفيش إشعارات لسه
             </div>
