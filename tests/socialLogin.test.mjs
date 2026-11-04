@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { enabledProviders, socialLoginOptions } from '../src/services/socialLogin.js';
+import { callbackNotice, enabledProviders, socialLoginOptions } from '../src/services/socialLogin.js';
 
 test('only enabled supported providers are offered, with Google first', () => {
   assert.deepEqual(enabledProviders({external:{google:true,facebook:true,github:true}}), ['google','facebook']);
@@ -15,4 +15,10 @@ test('both callbacks stay on the app origin and preserve the child destination',
     assert.equal(socialLoginOptions(provider,'https://example.test','https://other.test').options.redirectTo,'https://example.test/complete-profile');
   }
   assert.throws(() => socialLoginOptions('unknown','https://example.test'));
+});
+
+test('cancelled and failed OAuth returns expose only a fixed notice', () => {
+  assert.equal(callbackNotice('?next=/kids', '#error=access_denied'), 'cancelled');
+  assert.equal(callbackNotice('?error=server_error&error_description=private', ''), 'failed');
+  assert.equal(callbackNotice('?code=example', ''), null);
 });

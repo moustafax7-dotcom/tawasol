@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from "../supabaseClient";
+import { callbackNotice } from "../services/socialLogin";
 import { SPECIALTIES } from "../services/authService";
 import { DASHBOARD_BY_ROLE, getAuthDestination } from '../services/authPolicy';
 
@@ -9,6 +10,7 @@ export default function ProfileRecovery() {
   const { user, profile, loading, error, retryProfile, logout } = useAuth();
   const [logoutError, setLogoutError] = useState('');
   const [params] = useSearchParams();
+  const [notice] = useState(() => callbackNotice(window.location.search, window.location.hash));
   const [role, setRole] = useState('parent');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
@@ -28,6 +30,7 @@ export default function ProfileRecovery() {
       setSaveError('تعذر تأكيد حفظ الملف. أعد تحميل الحساب قبل المحاولة مرة أخرى.');
     } finally { setSaving(false); }
   }
+  if (notice) return <Navigate to="/auth" replace state={{ socialNotice: notice, from: { pathname: params.get("next") } }} />;
   if (loading) return <main dir="rtl" role="status" style={{ padding: 32 }}>جاري تحميل حسابك…</main>;
   if (!user && !error) return <Navigate to="/auth" replace />;
   if (!error && DASHBOARD_BY_ROLE[profile?.role]) return <Navigate to={getAuthDestination(profile.role, params.get("next"))} replace />;

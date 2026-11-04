@@ -39,6 +39,7 @@ export default function Auth() {
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
+  const [openingProvider, setOpeningProvider] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [infoMessage, setInfoMessage] = useState(""); // رسائل نجاح غير حرجة (زي "أكّد إيميلك")
@@ -57,6 +58,17 @@ export default function Auth() {
   }, [attempt]);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    function onReturn(event) {
+      if (event.persisted) {
+        setOpeningProvider(null);
+        setSubmitting(false);
+      }
+    }
+    window.addEventListener('pageshow', onReturn);
+    return () => window.removeEventListener('pageshow', onReturn);
+  }, []);
 
   const updateField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -119,6 +131,7 @@ export default function Auth() {
   }
 
   async function handleSocialLogin(provider) {
+    setOpeningProvider(provider);
     setSubmitting(true);
     setFormError("");
     try {
@@ -127,9 +140,26 @@ export default function Auth() {
       // لأي navigate يدوي هنا — الصفحة هتتغير لوحدها.
     } catch (err) {
       setFormError(getAuthErrorMessage(err.code));
+      setOpeningProvider(null);
       setSubmitting(false);
     }
   }
+
+  const socialOptions = <section aria-label="طرق الدخول الإضافية" className={styles.socialOptions}>
+    {providers.map(provider => {
+      const name = provider === 'google' ? 'Google' : 'Facebook';
+      return <button key={provider} type="button" className={styles.googleBtn}
+        disabled={submitting} onClick={() => handleSocialLogin(provider)}>
+        {openingProvider === provider ? 'جاري فتح ' : role === 'child' ? 'دخول ولي الأمر عبر ' : 'المتابعة باستخدام '}
+        <bdi lang="en">{name}</bdi>
+      </button>;
+    })}
+    {providerError && <p role="status">تعذر تحميل خيارات الدخول الإضافية.{' '}
+      <button className={styles.linkBtn} type="button" onClick={() => {
+        setProviderError(false); setAttempt(value => value + 1);
+      }}>إعادة المحاولة</button>
+    </p>}
+  </section>;
 
   return (
     <div className={styles.page}>
@@ -156,6 +186,13 @@ export default function Auth() {
           </button>
         </div>
 
+        {location.state?.socialNotice && !openingProvider && <p role="status" className={styles.childNotice}>
+          {location.state.socialNotice === 'cancelled' ? 'ألغيت تسجيل الدخول. تقدر تحاول تاني أو تدخل بالبريد الإلكتروني.' : 'تعذر إكمال تسجيل الدخول. حاول مرة أخرى أو استخدم البريد الإلكتروني.'}
+        </p>}
+        {mode === 'login' && <>
+          {socialOptions}
+          {providers.length > 0 && <div className={styles.divider}><span>أو بالبريد الإلكتروني</span></div>}
+        </>}
         <form onSubmit={handleSubmit} noValidate>
           {mode === "register" && (
             <>
@@ -269,24 +306,12 @@ export default function Auth() {
 
           {role !== "child" && (
             <button type="submit" className={styles.submitBtn} disabled={submitting}>
-              {submitting ? "جاري التحميل..." : mode === "login" ? "دخول" : "إنشاء الحساب"}
+              {submitting && !openingProvider ? "جاري التحميل..." : mode === "login" ? "دخول" : "إنشاء الحساب"}
             </button>
           )}
         </form>
 
-        {providers.length > 0 && <div className={styles.divider}><span>أو</span></div>}
-        {providers.map(provider => (
-          <button key={provider} type="button" className={styles.googleBtn}
-            onClick={() => handleSocialLogin(provider)} disabled={submitting}>
-            {role === 'child' ? 'دخول ولي الأمر لمساحة الطفل عبر ' : 'المتابعة باستخدام '}
-            {provider === 'google' ? 'Google' : 'Facebook'}
-          </button>
-        ))}
-        {providerError && <p role="status">تعذر تحميل خيارات الدخول الإضافية.{' '}
-          <button className={styles.linkBtn} type="button" onClick={() => {
-            setProviderError(false); setAttempt(value => value + 1);
-          }}>إعادة المحاولة</button>
-        </p>}
+        {mode === "register" && socialOptions}
       </div>
     </div>
   );

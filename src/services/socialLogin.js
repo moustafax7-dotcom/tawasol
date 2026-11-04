@@ -14,3 +14,12 @@ export function socialLoginOptions(provider, origin, destination) {
   else options.scopes = 'email';
   return { provider, options };
 }
+
+export function callbackNotice(search, hash) {
+  for (const value of [search, hash.replace(/^#/, '')]) {
+    const params = new URLSearchParams(value);
+    const code = params.get('error') || params.get('error_code');
+    if (code) return code === 'access_denied' ? 'cancelled' : 'failed';
+  }
+  return null;
+}
