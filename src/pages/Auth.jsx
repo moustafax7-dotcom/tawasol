@@ -8,7 +8,7 @@
 // logout). AuthContext بيكتشف تسجيل الدخول تلقائياً عن طريق
 // supabase.auth.onAuthStateChange، فمش محتاجين ننادي حاجة يدوي.
 // ============================================================
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import InputField from "../components/InputField";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
@@ -16,7 +16,8 @@ import RoleSelector from "../components/RoleSelector";
 import {
   loginWithEmail,
   registerUser,
-  loginWithGoogle,
+  loginWithProvider,
+  loadSocialProviders,
   getAuthErrorMessage,
   SPECIALTIES,
 } from "../services/authService";
@@ -42,6 +43,18 @@ export default function Auth() {
   const [formError, setFormError] = useState("");
   const [infoMessage, setInfoMessage] = useState(""); // رسائل نجاح غير حرجة (زي "أكّد إيميلك")
 
+  const [providers, setProviders] = useState([]);
+  const [providerError, setProviderError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadSocialProviders(controller.signal).then(list => {
+      if (!controller.signal.aborted) setProviders(list);
+    }).catch(() => {
+      if (!controller.signal.aborted) setProviderError(true);
+    });
+    return () => controller.abort();
+  }, [attempt]);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -105,11 +118,11 @@ export default function Auth() {
     }
   }
 
-  async function handleGoogleLogin() {
+  async function handleSocialLogin(provider) {
     setSubmitting(true);
     setFormError("");
     try {
-      await loginWithGoogle();
+      await loginWithProvider(provider, role === "child" ? "/kids" : location.state?.from?.pathname);
       // signInWithOAuth بيعمل Redirect فعلي للمتصفح، فمفيش داعي
       // لأي navigate يدوي هنا — الصفحة هتتغير لوحدها.
     } catch (err) {
@@ -129,7 +142,7 @@ export default function Auth() {
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${mode === "login" ? styles.tabActive : ""}`}
-            onClick={() => { setMode("login"); setFormError(""); setInfoMessage(""); }}
+            onClick={() => { setMode("login"); setRole("parent"); setFormError(""); setInfoMessage(""); }}
             type="button"
           >
             تسجيل الدخول
@@ -261,16 +274,19 @@ export default function Auth() {
           )}
         </form>
 
-        {role !== "child" && (
-          <>
-            <div className={styles.divider}>
-              <span>أو</span>
-            </div>
-            <button type="button" className={styles.googleBtn} onClick={handleGoogleLogin} disabled={submitting}>
-              <span>🔵</span> المتابعة عبر جوجل
-            </button>
-          </>
-        )}
+        {providers.length > 0 && <div className={styles.divider}><span>أو</span></div>}
+        {providers.map(provider => (
+          <button key={provider} type="button" className={styles.googleBtn}
+            onClick={() => handleSocialLogin(provider)} disabled={submitting}>
+            {role === 'child' ? 'دخول ولي الأمر لمساحة الطفل عبر ' : 'المتابعة باستخدام '}
+            {provider === 'google' ? 'Google' : 'Facebook'}
+          </button>
+        ))}
+        {providerError && <p role="status">تعذر تحميل خيارات الدخول الإضافية.{' '}
+          <button className={styles.linkBtn} type="button" onClick={() => {
+            setProviderError(false); setAttempt(value => value + 1);
+          }}>إعادة المحاولة</button>
+        </p>}
       </div>
     </div>
   );

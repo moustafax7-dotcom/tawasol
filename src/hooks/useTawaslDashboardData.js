@@ -1,5 +1,5 @@
 import { validateSession, localDateInput } from "../utils/sessionValidation.js";
-import { saveSpecialistRecord, saveSessionStatus } from "../services/specialistWrites";
+import { saveSpecialistRecord, saveSessionStatus, moveSession } from "../services/specialistWrites";
 // src/hooks/useTawaslDashboardData.js
 // ============================================================
 // يجيب بيانات داشبورد الأخصائي الحالي (المسجّل دخول) فقط —
@@ -112,7 +112,7 @@ export function useTawaslDashboardData() {
       setCases(builtCases);
 
       const mapSessions = (rows) => (rows || []).map((s) => ({
-        id: s.id, childName: s.children?.full_name || "—", time: s.session_time,
+        id: s.id, date: s.session_date, childName: s.children?.full_name || "—", time: s.session_time,
         durationMin: s.duration_minutes,
         status: s.status === "completed" ? "منتهية" : s.status === "in_progress" ? "جارية" : s.status === "cancelled" ? "ملغاة" : "قادمة",
         type: s.type || "—",
@@ -174,6 +174,15 @@ export function useTawaslDashboardData() {
     }
   }
 
+  async function rescheduleSession(session, date, time) {
+    const result = await moveSession(supabase, session, date, time);
+    if (!result.error) {
+      if (date !== sessionDate) setSessionDate(date);
+      else await load();
+    }
+    return result;
+  }
+
   async function createReport({ childId, content, progress, recommendations }) {
     if (!profile?.id) return { error: "بيانات المستخدم لسه بتتحمّل" };
     const recArray = (recommendations || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -200,6 +209,7 @@ export function useTawaslDashboardData() {
     error,
     createSession,
     updateSessionStatus,
+    rescheduleSession,
     createReport,
     refresh: load,
   };

@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { localDateInput, validateSession } from '../src/utils/sessionValidation.js';
 import { saveSessionStatus } from '../src/services/specialistWrites.js';
-const now = new Date(2026, 9, 25, 12);
+const now = new Date('2026-10-25T12:00:00Z');
 const booking = { childId: 'child', date: '2026-10-26', time: '13:30', duration: 45, type: 'Speech' };
-test('valid future booking uses a local calendar date', () => {
+test('valid future booking uses the Cairo calendar date', () => {
   assert.equal(localDateInput(now), '2026-10-25');
   assert.equal(validateSession(booking, now), null);
 });
@@ -40,4 +40,10 @@ test('missing specialist sends no request', async () => {
   const calls = [];
   assert.ok((await saveSessionStatus(statusClient({}, calls), { sessionId: 's', status: 'completed' })).error);
   assert.deepEqual(calls, []);
+});
+
+test('booking uses the Cairo day across UTC midnight', () => {
+  const instant = new Date('2026-01-01T22:30:00Z');
+  assert.equal(localDateInput(instant), '2026-01-02');
+  assert.ok(validateSession({ ...booking, date: '2026-01-02', time: '00:15' }, instant));
 });

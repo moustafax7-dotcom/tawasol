@@ -301,7 +301,7 @@ function BookSessionModal({ cases, onClose, onCreate }) {
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(20,20,25,0.5)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <form onClick={(e)=>e.stopPropagation()} onSubmit={handleSubmit} style={{ background:T.surface, borderRadius:20, padding:24, width:"100%", maxWidth:380, display:"flex", flexDirection:"column", gap:12 }}>
         <h3 style={{ margin:0, fontSize:17, fontWeight:800, color:T.text }}>حجز جلسة جديدة</h3>
-        <p style={{ margin:0, fontSize:12, color:T.textMuted }}>التوقيت حسب جهازك. المدة بالدقائق. حجز الموعد لا ينشئ مكالمة فيديو.</p>
+        <p style={{ margin:0, fontSize:12, color:T.textMuted }}>الموعد بتوقيت القاهرة. المدة بالدقائق. حجز الموعد لا ينشئ مكالمة فيديو.</p>
         <select aria-label="الطفل" required value={childId} onChange={(e)=>setChildId(e.target.value)} style={{ padding:"10px 12px", borderRadius:10, border:`1.5px solid ${T.border}`, fontFamily:"inherit" }}>
           {cases.map(c => <option key={c.id} value={c.id}>{c.childName}</option>)}
         </select>
@@ -321,7 +321,7 @@ function BookSessionModal({ cases, onClose, onCreate }) {
   );
 }
 
-function SessionsPage({ sessionsToday, sessionDate, onDateChange, cases, createSession, updateSessionStatus }) {
+function SessionsPage({ sessionsToday, sessionDate, onDateChange, cases, createSession, updateSessionStatus, rescheduleSession }) {
   const [filter, setFilter] = useState("الكل");
   const [showModal, setShowModal] = useState(false);
   const FILTERS = ["الكل","جارية","قادمة","منتهية","ملغاة"];
@@ -374,7 +374,7 @@ function SessionsPage({ sessionsToday, sessionDate, onDateChange, cases, createS
             </div>
             <div style={{ fontSize:12, color:T.textMuted, background:T.surfaceAlt, padding:"4px 10px", borderRadius:8 }}>{s.durationMin} دقيقة</div>
             <StatusPill label={s.status} />
-            <SessionActions session={s} onUpdate={updateSessionStatus} theme={T} />
+            <SessionActions session={s} onUpdate={updateSessionStatus} onMove={rescheduleSession} theme={T} />
           </div>
         ))}
       </Card>
@@ -663,13 +663,13 @@ export default function SpecialistDashboard() {
   const [section, setSection] = useState("overview");
   const {
     specialist, cases, sessionsToday, sessionsForDate, sessionDate, setSessionDate, reports, loading, error,
-    createSession, updateSessionStatus, createReport, refresh,
+    createSession, updateSessionStatus, rescheduleSession, createReport, refresh,
   } = useTawaslDashboardData();
 
   const pages = {
     overview: <OverviewPage onNavigate={setSection} cases={cases} sessionsToday={sessionsToday} />,
     cases:    <CasesPage cases={cases} />,
-    sessions: <SessionsPage sessionsToday={sessionsForDate} sessionDate={sessionDate} onDateChange={setSessionDate} cases={cases} createSession={createSession} updateSessionStatus={updateSessionStatus} />,
+    sessions: <SessionsPage sessionsToday={sessionsForDate} sessionDate={sessionDate} onDateChange={setSessionDate} cases={cases} createSession={createSession} updateSessionStatus={updateSessionStatus} rescheduleSession={rescheduleSession} />,
     reports:  <ReportsPage reports={reports} cases={cases} createReport={createReport} />,
   };
   return (

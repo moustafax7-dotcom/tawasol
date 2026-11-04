@@ -1,6 +1,6 @@
 // src/components/RoleSelector.jsx
 // ============================================================
-// اختيار الدور خطوة أولى في التسجيل. دور "الطفل" مُعطّل بتصميم
+// اختيار الدور خطوة أولى في التسجيل. مساحة الطفل مرتبطة بحساب ولي الأمر
 // (Disabled by design) — حساب الطفل يُنشأ فقط من داخل حساب
 // ولي الأمر بعد تسجيل الدخول، وليس من هنا مباشرة.
 // ============================================================
@@ -9,7 +9,7 @@ import styles from "./RoleSelector.module.css";
 const ROLES = [
   { value: "parent", icon: "👨‍👩‍👧", label: "ولي أمر", desc: "متابعة طفلك وحجز الجلسات" },
   { value: "specialist", icon: "👩‍⚕️", label: "أخصائي", desc: "إدارة خطط علاج وتقارير" },
-  { value: "child", icon: "🧒", label: "طفل", desc: "يُنشأ الحساب عبر ولي الأمر", disabled: true },
+  { value: "child", icon: "🧒", label: "طفل", desc: "الدخول من خلال ولي الأمر" },
 ];
 
 export default function RoleSelector({ selectedRole, onSelect }) {

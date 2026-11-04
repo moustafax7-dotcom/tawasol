@@ -8,7 +8,8 @@
 // يشتغل حتى لو الإيميل لسه مش متأكد (مفيش Session وقتها، فأي
 // insert من العميل هيترفض بسبب RLS). شوف trigger_update.sql
 // ============================================================
-import { supabase } from "../supabaseClient";
+import { enabledProviders, socialLoginOptions } from "./socialLogin";
+import { supabase, supabaseUrl, supabaseAnonKey } from "../supabaseClient";
 
 import { normalizeAuthError } from "./authPolicy";
 export { getAuthErrorMessage } from "./authPolicy";
@@ -67,13 +68,18 @@ export async function registerUser({ name, email, password, role, extra = {} }) 
   };
 }
 
-// --- تسجيل دخول بجوجل ---
-export async function loginWithGoogle() {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo: window.location.origin + "/complete-profile" },
+export async function loadSocialProviders(signal) {
+  const response = await fetch(supabaseUrl + '/auth/v1/settings', {
+    headers: { apikey: supabaseAnonKey }, signal,
   });
-  if (error) throw { code: "default" };
+  if (!response.ok) throw new Error('Provider settings unavailable');
+  return enabledProviders(await response.json());
+}
+
+export async function loginWithProvider(provider, from) {
+  const options = socialLoginOptions(provider, window.location.origin, from);
+  const { data, error } = await supabase.auth.signInWithOAuth(options);
+  if (error) throw normalizeAuthError(error);
   return data;
 }
 
