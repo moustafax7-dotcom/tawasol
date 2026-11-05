@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useParentDashboardData } from "../hooks/useParentDashboardData";
+import { useAuth } from "../context/AuthContext";
+import FamilyAppointments from "../components/FamilyAppointments";
 import NotificationBell from "../components/NotificationBell";
 
 // ─── Tokens ───────────────────────────────────────────────────────────────────
@@ -302,6 +304,7 @@ function Header({ child, children, selectedChildId, onSelectChild }: any) {
             <button
               key={c.id}
               onClick={() => onSelectChild(c.id)}
+              aria-pressed={c.id === selectedChildId}
               style={{
                 padding: "6px 16px", borderRadius: 999, whiteSpace: "nowrap",
                 border: `1.5px solid ${c.id === selectedChildId ? T.primary : T.border}`,
@@ -332,11 +335,17 @@ function AddChildForm({ onAdd }: { onAdd: (v: { fullName: string; age: number })
       setErr("محتاجين اسم الطفل وسنّه");
       return;
     }
+    if (submitting) return;
     setSubmitting(true);
     setErr("");
-    const { error } = await onAdd({ fullName: fullName.trim(), age: Number(age) });
-    setSubmitting(false);
-    if (error) setErr(error);
+    try {
+      const { error } = await onAdd({ fullName: fullName.trim(), age: Number(age) });
+      if (error) setErr(error);
+    } catch {
+      setErr("تعذر حفظ بيانات الطفل. حاول مرة أخرى.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -348,6 +357,9 @@ function AddChildForm({ onAdd }: { onAdd: (v: { fullName: string; age: number })
         value={fullName}
         onChange={(e) => setFullName(e.target.value)}
         placeholder="اسم الطفل"
+        aria-label="اسم الطفل"
+        maxLength={120}
+        required
         style={{
           padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${T.border}`,
           fontSize: 14, fontFamily: "inherit", textAlign: "right",
@@ -357,13 +369,18 @@ function AddChildForm({ onAdd }: { onAdd: (v: { fullName: string; age: number })
         value={age}
         onChange={(e) => setAge(e.target.value)}
         type="number"
+        aria-label="عمر الطفل بالسنوات"
+        min={1}
+        max={120}
+        step={1}
+        required
         placeholder="عمر الطفل"
         style={{
           padding: "12px 14px", borderRadius: 12, border: `1.5px solid ${T.border}`,
           fontSize: 14, fontFamily: "inherit", textAlign: "right",
         }}
       />
-      {err && <div style={{ color: "#E05555", fontSize: 12, textAlign: "center" }}>{err}</div>}
+      {err && <div role="alert" style={{ color: "#E05555", fontSize: 12, textAlign: "center" }}>{err}</div>}
       <button
         type="submit"
         disabled={submitting}
@@ -381,12 +398,23 @@ function AddChildForm({ onAdd }: { onAdd: (v: { fullName: string; age: number })
 
 
 export default function ParentDashboard() {
+  const { user } = useAuth();
+  return user ? <FamilyDashboard key={user.id} parentId={user.id} /> : null;
+}
+
+function FamilyDashboard({ parentId }: { parentId: string }) {
+  const [showAddChild, setShowAddChild] = useState(false);
   const {
     children, selectedChild, selectedChildId, setSelectedChildId, addChild,
     specialist, moodToday, weekMoods, tasksToday, gamesToday, streak, progress,
-    loading, childrenLoading, error,
+    loading, childrenLoading, error, refresh, refreshChildren,
   } = useParentDashboardData();
   const navigate = useNavigate();
+  async function handleAddChild(values: { fullName: string; age: number }) {
+    const result = await addChild(values);
+    if (!result.error) setShowAddChild(false);
+    return result;
+  }
 
   return (
     <>
@@ -402,9 +430,9 @@ export default function ParentDashboard() {
         fontFamily: "'Tajawal', sans-serif", direction: "rtl",
       }}>
         {!selectedChild ? (
-          <div style={{ padding: 60, textAlign: "center", color: T.textMuted }}>
+          <div style={{ padding: "40px 20px", textAlign: "center", color: T.textMuted }}>
             {error
-              ? `حصل خطأ: ${error}`
+              ? <div role="alert">{error} <button onClick={refreshChildren}>إعادة المحاولة</button></div>
               : childrenLoading
               ? "بنجهّز بيانات طفلك..."
               : (
@@ -412,7 +440,7 @@ export default function ParentDashboard() {
                   <div style={{ fontSize: 40, marginBottom: 12 }}>👶</div>
                   <div style={{ fontWeight: 800, color: T.text, marginBottom: 6 }}>لسه مفيش طفل مسجل على حسابك</div>
                   <div style={{ fontSize: 13, marginBottom: 4 }}>أضف بيانات طفلك عشان تقدر تتابع تقدمه هنا</div>
-                  <AddChildForm onAdd={addChild} />
+                  <AddChildForm onAdd={handleAddChild} />
                 </div>
               )}
           </div>
@@ -426,6 +454,13 @@ export default function ParentDashboard() {
             />
 
             <div style={{ maxWidth: 680, margin: "0 auto", padding: "20px 16px 40px" }}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+                <button type="button" aria-expanded={showAddChild} onClick={() => setShowAddChild(value => !value)} style={{ padding: "12px 18px", borderRadius: 12, background: T.primaryBg, color: T.text, border: `1px solid ${T.border}`, font: "inherit", cursor: "pointer" }}>
+                  {showAddChild ? "إغلاق إضافة الطفل" : "إضافة طفل آخر"}
+                </button>
+                <button type="button" onClick={refreshChildren} disabled={childrenLoading} style={{ padding: "12px 18px", borderRadius: 12, background: T.surface, color: T.text, border: `1px solid ${T.border}`, font: "inherit", cursor: "pointer" }}>تحديث قائمة الأطفال</button>
+              </div>
+              {showAddChild && <Card style={{ padding: 20, marginBottom: 20 }}><h2 style={{ fontSize: 18 }}>إضافة طفل للأسرة</h2><AddChildForm onAdd={handleAddChild} /></Card>}
               {/* Child summary banner */}
               <div style={{
                 padding: "16px 20px", borderRadius: 20, marginBottom: 20,
@@ -438,7 +473,7 @@ export default function ParentDashboard() {
                   <div style={{ fontSize: 17, fontWeight: 900, color: "#fff" }}>{selectedChild.full_name}</div>
                   <div style={{ fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 }}>{selectedChild.age} سنوات</div>
                   <div style={{ display: "flex", gap: 10, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
-                    {[
+                    {!loading && !error && [
                       { icon:"🔥", val:`${streak} أيام` },
                       { icon:"📈", val:`${progress}%` },
                       { icon:"🎮", val:`${gamesToday.length} ألعاب` },
@@ -464,9 +499,11 @@ export default function ParentDashboard() {
                 </div>
               </div>
 
+              <FamilyAppointments key={selectedChild.id} parentId={parentId} childId={selectedChild.id} theme={T} />
+              {error && <div role="alert" style={{ padding: 16, marginBottom: 16, color: "#9B3030", background: "#FFF0F0", borderRadius: 12 }}>{error} <button onClick={refresh}>إعادة المحاولة</button></div>}
               {loading ? (
                 <div style={{ textAlign: "center", padding: 40, color: T.textMuted }}>بيتحمّل...</div>
-              ) : (
+              ) : !error && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <MoodCard child={selectedChild} moodToday={moodToday} weekMoods={weekMoods} />
                   <SpecialistCard specialist={specialist} progress={progress} />

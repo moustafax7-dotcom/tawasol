@@ -8,10 +8,14 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 export default function ProtectedRoute({ children, allowedRoles }) {
-  const { profile, loading } = useAuth();
+  const { profile, user, loading, error } = useAuth();
   const location = useLocation();
 
-  if (loading) return null; // ممكن نستبدلها بـ Spinner لاحقاً
+  if (loading) return <main dir="rtl" role="status" style={{ padding: 32 }}>جاري تحميل حسابك…</main>;
+
+  if (error || (user && !["parent", "specialist"].includes(profile?.role))) {
+    return <Navigate to="/complete-profile" replace />;
+  }
 
   if (!profile) {
     return <Navigate to="/auth" state={{ from: location }} replace />;

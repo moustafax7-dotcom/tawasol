@@ -8,7 +8,7 @@
 // logout). AuthContext بيكتشف تسجيل الدخول تلقائياً عن طريق
 // supabase.auth.onAuthStateChange، فمش محتاجين ننادي حاجة يدوي.
 // ============================================================
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import InputField from "../components/InputField";
 import PasswordStrengthMeter from "../components/PasswordStrengthMeter";
@@ -16,16 +16,14 @@ import RoleSelector from "../components/RoleSelector";
 import {
   loginWithEmail,
   registerUser,
-  loginWithGoogle,
+  loginWithProvider,
+  loadSocialProviders,
   getAuthErrorMessage,
   SPECIALTIES,
 } from "../services/authService";
 import styles from "./Auth.module.css";
 
-const DASHBOARD_BY_ROLE = {
-  parent: "/parent",
-  specialist: "/tawasl",
-};
+import { getAuthDestination } from "../services/authPolicy";
 
 export default function Auth() {
   const [mode, setMode] = useState("login"); // "login" | "register"
@@ -41,12 +39,36 @@ export default function Auth() {
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [errors, setErrors] = useState({});
+  const [openingProvider, setOpeningProvider] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
   const [infoMessage, setInfoMessage] = useState(""); // رسائل نجاح غير حرجة (زي "أكّد إيميلك")
 
+  const [providers, setProviders] = useState([]);
+  const [providerError, setProviderError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    loadSocialProviders(controller.signal).then(list => {
+      if (!controller.signal.aborted) setProviders(list);
+    }).catch(() => {
+      if (!controller.signal.aborted) setProviderError(true);
+    });
+    return () => controller.abort();
+  }, [attempt]);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    function onReturn(event) {
+      if (event.persisted) {
+        setOpeningProvider(null);
+        setSubmitting(false);
+      }
+    }
+    window.addEventListener('pageshow', onReturn);
+    return () => window.removeEventListener('pageshow', onReturn);
+  }, []);
 
   const updateField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
 
@@ -66,8 +88,7 @@ export default function Auth() {
 
   function redirectAfterAuth(user) {
     const from = location.state?.from?.pathname;
-    if (!user.role) return navigate("/complete-profile", { replace: true });
-    navigate(from || DASHBOARD_BY_ROLE[user.role] || "/", { replace: true });
+    navigate(getAuthDestination(user.role, from), { replace: true });
   }
 
   async function handleSubmit(e) {
@@ -109,18 +130,36 @@ export default function Auth() {
     }
   }
 
-  async function handleGoogleLogin() {
+  async function handleSocialLogin(provider) {
+    setOpeningProvider(provider);
     setSubmitting(true);
     setFormError("");
     try {
-      await loginWithGoogle();
+      await loginWithProvider(provider, role === "child" ? "/kids" : location.state?.from?.pathname);
       // signInWithOAuth بيعمل Redirect فعلي للمتصفح، فمفيش داعي
       // لأي navigate يدوي هنا — الصفحة هتتغير لوحدها.
     } catch (err) {
       setFormError(getAuthErrorMessage(err.code));
+      setOpeningProvider(null);
       setSubmitting(false);
     }
   }
+
+  const socialOptions = <section aria-label="طرق الدخول الإضافية" className={styles.socialOptions}>
+    {providers.map(provider => {
+      const name = provider === 'google' ? 'Google' : 'Facebook';
+      return <button key={provider} type="button" className={styles.googleBtn}
+        disabled={submitting} onClick={() => handleSocialLogin(provider)}>
+        {openingProvider === provider ? 'جاري فتح ' : role === 'child' ? 'دخول ولي الأمر عبر ' : 'المتابعة باستخدام '}
+        <bdi lang="en">{name}</bdi>
+      </button>;
+    })}
+    {providerError && <p role="status">تعذر تحميل خيارات الدخول الإضافية.{' '}
+      <button className={styles.linkBtn} type="button" onClick={() => {
+        setProviderError(false); setAttempt(value => value + 1);
+      }}>إعادة المحاولة</button>
+    </p>}
+  </section>;
 
   return (
     <div className={styles.page}>
@@ -133,7 +172,7 @@ export default function Auth() {
         <div className={styles.tabs}>
           <button
             className={`${styles.tab} ${mode === "login" ? styles.tabActive : ""}`}
-            onClick={() => { setMode("login"); setFormError(""); setInfoMessage(""); }}
+            onClick={() => { setMode("login"); setRole("parent"); setFormError(""); setInfoMessage(""); }}
             type="button"
           >
             تسجيل الدخول
@@ -147,6 +186,13 @@ export default function Auth() {
           </button>
         </div>
 
+        {location.state?.socialNotice && !openingProvider && <p role="status" className={styles.childNotice}>
+          {location.state.socialNotice === 'cancelled' ? 'ألغيت تسجيل الدخول. تقدر تحاول تاني أو تدخل بالبريد الإلكتروني.' : 'تعذر إكمال تسجيل الدخول. حاول مرة أخرى أو استخدم البريد الإلكتروني.'}
+        </p>}
+        {mode === 'login' && <>
+          {socialOptions}
+          {providers.length > 0 && <div className={styles.divider}><span>أو بالبريد الإلكتروني</span></div>}
+        </>}
         <form onSubmit={handleSubmit} noValidate>
           {mode === "register" && (
             <>
@@ -260,21 +306,12 @@ export default function Auth() {
 
           {role !== "child" && (
             <button type="submit" className={styles.submitBtn} disabled={submitting}>
-              {submitting ? "جاري التحميل..." : mode === "login" ? "دخول" : "إنشاء الحساب"}
+              {submitting && !openingProvider ? "جاري التحميل..." : mode === "login" ? "دخول" : "إنشاء الحساب"}
             </button>
           )}
         </form>
 
-        {role !== "child" && (
-          <>
-            <div className={styles.divider}>
-              <span>أو</span>
-            </div>
-            <button type="button" className={styles.googleBtn} onClick={handleGoogleLogin} disabled={submitting}>
-              <span>🔵</span> المتابعة عبر جوجل
-            </button>
-          </>
-        )}
+        {mode === "register" && socialOptions}
       </div>
     </div>
   );

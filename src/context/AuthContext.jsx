@@ -1,61 +1,77 @@
-// src/context/AuthContext.jsx
-// ============================================================
-// مصدر واحد لحالة المستخدم الحقيقي عبر Supabase. يقرأ الجلسة
-// (auth.users) ثم يجيب الدور (role) من جدول profiles، عشان
-// أي Component يقدر يعرف "هو مين ودوره إيه" بدون ما يكرر
-// استعلامات Supabase بنفسه.
-// ============================================================
-import { createContext, useContext, useEffect, useState } from "react";
-import { supabase } from "../supabaseClient";
+import { createContext, useContext, useEffect, useState } from 'react';
+import { supabase } from '../supabaseClient';
 
 const AuthContext = createContext(null);
+const initial = { profile: null, user: null, loading: true, error: null };
 
 export function AuthProvider({ children }) {
-  // profile: undefined = لسه بيتحمّل، null = مش مسجل دخول، object = مسجل ومعاه role
-  const [profile, setProfile] = useState(undefined);
+  const [state, setState] = useState(initial);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
-    let isMounted = true;
+    let active = true;
+    let request = 0;
+    let authEventSeen = false;
+    const timers = new Set();
 
-    async function loadProfile(userId) {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .single();
-      if (isMounted) setProfile(error ? null : data);
+    async function load(session, ticket) {
+      if (!active || ticket !== request) return;
+      const user = session?.user || null;
+      if (!user) {
+        setState({ profile: null, user: null, loading: false, error: null });
+        return;
+      }
+      setState({ profile: null, user, loading: true, error: null });
+      try {
+        const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        if (error) throw error;
+        if (active && ticket === request) setState({ profile: data, user, loading: false, error: null });
+      } catch {
+        if (active && ticket === request) setState({ profile: null, user, loading: false, error: 'profile_unavailable' });
+      }
     }
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) loadProfile(session.user.id);
-      else if (isMounted) setProfile(null);
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      authEventSeen = true;
+      const ticket = ++request;
+      // Leave the auth callback before issuing another Supabase request.
+      const timer = setTimeout(() => { timers.delete(timer); load(session, ticket); }, 0);
+      timers.add(timer);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) loadProfile(session.user.id);
-      else setProfile(null);
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!active || authEventSeen) return;
+      if (error) throw error;
+      return load(data.session, ++request);
+    }).catch(() => {
+      if (active && !authEventSeen) setState({ ...initial, loading: false, error: 'session_unavailable' });
     });
 
     return () => {
-      isMounted = false;
-      subscription?.subscription?.unsubscribe();
+      active = false;
+      ++request;
+      timers.forEach(clearTimeout);
+      data.subscription.unsubscribe();
     };
-  }, []);
+  }, [revision]);
 
-  async function logout() {
-    await supabase.auth.signOut();
-    setProfile(null);
+  function retryProfile() {
+    setState(initial);
+    setRevision(value => value + 1);
   }
 
-  return (
-    <AuthContext.Provider value={{ profile, loading: profile === undefined, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  async function logout() {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+  }
+
+  return <AuthContext.Provider value={{ ...state, retryProfile, logout }}>{children}</AuthContext.Provider>;
 }
 
+// Existing screens and hooks share this public context API.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth لازم يتنادى جوه AuthProvider");
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used inside AuthProvider');
+  return context;
 }

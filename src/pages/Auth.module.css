@@ -217,3 +217,10 @@
   transition: all 0.2s;
 }
 .googleBtn:hover { background: var(--bg); }
+
+.socialOptions { display: grid; gap: 10px; }
+.socialOptions:empty { display: none; }
+form + .socialOptions:not(:empty) { margin-top: 16px; }
+.googleBtn { min-height: 46px; }
+.googleBtn:focus-visible, .linkBtn:focus-visible { outline: 3px solid var(--primary); outline-offset: 3px; }
+.googleBtn:disabled { cursor: default; opacity: 0.65; }
